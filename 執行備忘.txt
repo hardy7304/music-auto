@@ -1,0 +1,27 @@
+（已儲存）music-auto 執行要點 — 更新日期見檔案儲存日
+
+【Notion 正式流程】
+  命令列（在 music-auto 目錄）：
+    .\.venv\Scripts\python -u app\main.py --attach-open-page --from-notion
+  若未加 --from-notion，會變「手動測試」用 Test Song，不會讀 Notion 佇列。
+
+【佇列筆數】
+  未勾選「是否發佈」的列會全部進佇列；曾出現一次 191 筆，跑完需極長時間與大量 API。
+  建議在 Notion 先勾好暫不做的列，只留少數未勾選再跑。
+
+【單一分頁】
+  NOTION_PARALLEL_MAX=1（預設）時，一個 Mureka 創作分頁即可。
+
+【Chrome】
+  遠端偵錯埠須與 .env 的 BROWSER_CDP_URL 一致；執行中勿切走創作分頁。
+
+【網頁控制台】
+  關舊行程後在 music-auto 執行： .\.venv\Scripts\python -m web
+  若 POST /api/run/stream 回 404，多半是舊程式仍占 8765，請關掉重開。
+  詳見 START_HERE.txt、scripts\self_check.py
+
+【純音樂 vs 有歌詞】
+  依 Notion「人聲」欄與 NOTION_INSTRUMENTAL_VOCAL_LABEL；程式已加強提示詞區分。
+
+【停止執行】
+  終端機內按 Ctrl+C。

@@ -1,0 +1,13 @@
+# Python 3.12+
+browser-use>=0.11.0
+playwright>=1.58.0
+google-genai>=1.0.0
+python-dotenv>=1.0.1
+pydantic>=2.9.0
+pytest>=8.3.0
+notion-client>=2.2.1,<4
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+requests>=2.32.0
+gspread>=6.0.0
+google-auth>=2.0.0

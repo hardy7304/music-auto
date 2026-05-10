@@ -1,0 +1,42 @@
+music-auto — 請照順序做（兩天沒成功多半是「舊網頁程式還在跑」或「目錄不對」）
+
+【新版重點】主流程已改成 Playwright 優先
+  AUTOMATION_ENGINE=playwright（預設）時，不跑 browser-use LLM step，token 消耗幾乎為 0。
+  若 Mureka UI 改版造成 selector 失敗，再短期使用 --automation-engine auto 或 browser_use。
+
+【0】一定要在這個資料夾裡操作
+  路徑應為：...\browser-use -mureka\music-auto
+  底下要有 app\、web\、.env
+
+【1】關掉舊的網頁控制台（很重要）
+  若曾執行過 python -m web，請在該黑色視窗按 Ctrl+C 關掉。
+  否則埠 8765 上可能是舊程式，會出現 POST /api/run/stream → 404。
+  仍無法關掉時（PowerShell 系統管理員）：
+    netstat -ano | findstr :8765
+    記下最後一欄 PID，再： taskkill /PID <該數字> /F
+  重開後請開 http://127.0.0.1:8765/api/meta 看 app_version 應為 0.5.0（代表新程式已上線）。
+
+【2】檢查環境（可選但強烈建議）
+  在 music-auto 開 PowerShell：
+    .\.venv\Scripts\python scripts\self_check.py
+  應看到「網頁 API 路由已註冊」與「Playwright 主流程不需要建立 LLM」。
+  若看到 127.0.0.1:9222 連不上，請先依【4】重開 Chrome。
+
+【3】啟動網頁（擇一）
+  A) 雙擊 start_web.bat
+  B) 手動：.\.venv\Scripts\python -m web
+  瀏覽器開：http://127.0.0.1:8765
+
+【4】Chrome
+  用遠端偵錯開啟（例如 --remote-debugging-port=9222），手動登入 Mureka，並開「創作 / Create Music」分頁。
+
+【5】第一次請用安全模式（不真的按 Generate）
+  命令列：
+    .\.venv\Scripts\python -u app\main.py --attach-open-page --from-notion --automation-engine playwright --dry-run true --notion-limit 1
+  網頁：選 Playwright、DRY_RUN 強制開，並在 --notion-limit 填 1。
+
+【6】要真的生成
+  確認測試一筆填表正確後，再用 --dry-run false。第一次正式也建議保留 --notion-limit 1。
+
+【7】仍失敗時
+  把終端機最後 40 行 log 複製下來（遮掉 API key），並確認 self_check.py 是否全為 ✓。

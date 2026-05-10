@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mureka Music Automation Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">♬</span>
+      <div>
+        <h1>Mureka Auto</h1>
+        <p class="tagline">Premium Music Production Pipeline</p>
+      </div>
+    </div>
+    <div class="meta-pill" id="versionPill" aria-live="polite">V0.6.0</div>
+  </header>
+
+  <main class="layout">
+    <section class="panel primary">
+      <h2>控制面板</h2>
+      <p class="hint">
+        請確保已用偵錯模式啟動 Chrome 並開啟 <strong>Create Music</strong> 分頁。
+      </p>
+      
+      <div class="run-status" id="runStatus" hidden></div>
+
+      <form id="runForm" class="run-form">
+        <!-- 執行模式 -->
+        <fieldset>
+          <legend>執行模式 (Preset)</legend>
+          <label class="choice">
+            <input type="radio" name="preset" value="generate_batch" />
+            <span>
+              <strong>✨ AI 靈感大爆發 (Agent)</strong>
+              輸入任意主題，AI 幫你一口氣寫出多首好歌，直接存進 Mureka Queue！
+            </span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="preset" value="process_csv" />
+            <span>
+              <strong>1. 處理靈感主題 (Idea → Queue)</strong>
+              讀取「工作表1」的待生成靈感，轉為完整歌曲寫入 Mureka_Queue。
+            </span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="preset" value="from_sheet" checked />
+            <span>
+              <strong>2. 正式生產 (Mureka Queue)</strong>
+              讀取 Google Sheet 佇列，自動在 Mureka 生成並回寫結果。(推薦)
+            </span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="preset" value="from_notion" />
+            <span>
+              <strong>舊版生產 (Notion)</strong>
+              讀取 Notion 任務，自動在 Mureka 生成並回寫。
+            </span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="preset" value="manual" />
+            <span>
+              <strong>單曲測試</strong>
+              不依賴任何佇列，純測試生成。
+            </span>
+          </label>
+        </fieldset>
+
+        <!-- AI 靈感大爆發專用設定 -->
+        <fieldset id="batchSettings" style="display: none; border-color: var(--primary);">
+          <legend>✨ 靈感生成設定</legend>
+          <div class="input-group">
+            <label class="field-inline">
+              <span class="field-label">音樂種類 / 主題</span>
+              <input type="text" name="theme" id="themeInput" placeholder="例如：健身、身心靈、世界流行金曲" style="flex: 2;" />
+            </label>
+            <label class="field-inline">
+              <span class="field-label">生成數量</span>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="number" name="count" id="countInput" min="1" max="20" value="3" style="width: 80px;" />
+                <button type="submit" class="cta" style="padding: 0.8rem 1.5rem; font-size: 0.95rem; flex: none;">確定生成</button>
+              </div>
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- 進階參數設定 -->
+        <div class="advanced-grid">
+          <fieldset>
+            <legend>自動化引擎 (Engine)</legend>
+            <label class="choice">
+              <input type="radio" name="engine" value="env" checked />
+              <span>沿用 .env (Playwright)</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="engine" value="playwright" />
+              <span>Playwright (推薦)</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="engine" value="auto" />
+              <span>Auto (失敗自動切換)</span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Dry Run (點擊測試)</legend>
+            <label class="choice">
+              <input type="radio" name="dry" value="env" checked />
+              <span>沿用 .env</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="dry" value="true" />
+              <span>開啟 (不點 Generate)</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="dry" value="false" />
+              <span>關閉 (會點 Generate)</span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>生成模型 (Model)</legend>
+            <label class="choice">
+              <input type="radio" name="mmm" value="env" checked />
+              <span>沿用 .env</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="mmm" value="v9" />
+              <span>僅 V9</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="mmm" value="o2" />
+              <span>僅 O2</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="mmm" value="both" />
+              <span>V9 + O2 並行</span>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>並行設定 (Parallel)</legend>
+            <label class="choice">
+              <input type="radio" name="npm" value="env" checked />
+              <span>沿用 .env</span>
+            </label>
+            <div class="parallel-options">
+              <label><input type="radio" name="npm" value="1" /> 1</label>
+              <label><input type="radio" name="npm" value="3" /> 3</label>
+              <label><input type="radio" name="npm" value="5" /> 5</label>
+            </div>
+          </fieldset>
+
+          <fieldset class="span-cols">
+            <legend>歌曲模式 (Song Mode)</legend>
+            <div class="mode-grid">
+              <label class="choice">
+                <input type="radio" name="song_mode" value="full" checked />
+                <span><strong>正式完整 (Full)</strong><br><small>含主歌x2、副歌x3、橋段、結尾</small></span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="song_mode" value="demo" />
+                <span><strong>精簡 Demo (Demo)</strong><br><small>適合短影音，結構緊湊</small></span>
+              </label>
+              <label class="choice">
+                <input type="radio" name="song_mode" value="free" />
+                <span><strong>自由發揮 (Free)</strong><br><small>不限格式，由 AI 靈感決定</small></span>
+              </label>
+            </div>
+          </fieldset>
+        </div>
+
+        <fieldset>
+          <legend>限制與路徑</legend>
+          <div class="input-group">
+            <label class="field-inline">
+              <span class="field-label">處理數量限制 (Notion Limit)</span>
+              <input type="number" name="notion_limit" id="notionLimitInput" min="0" placeholder="0 = 無限制" />
+            </label>
+            <label class="field-inline">
+              <span class="field-label">設定檔路徑 (Env File)</span>
+              <input type="text" name="env_file" id="envFileInput" placeholder=".env.cloud" />
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="run-actions">
+          <button type="submit" class="cta" id="runBtn">
+            <span class="cta-label">開始自動化流程</span>
+            <span class="cta-spinner" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="btn-stop" id="stopBtn" disabled>
+            停止
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel log-panel">
+      <h2>實時輸出日誌</h2>
+      <pre class="log" id="logOut">（等待執行中...）</pre>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>Mureka Music Automation Dashboard · 2026</span>
+  </footer>
+
+  <script src="/static/app.js?v=2" defer></script>
+</body>
+</html>
