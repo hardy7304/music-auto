@@ -113,6 +113,10 @@ You are on the music creation page in VOCAL / 有歌詞 mode (lyrics for singing
 
 1) Dismiss cookie banners, modals, or overlays that block inputs. Do NOT click Sign in, Try free now,
    Continue with Google, or any login/OAuth control.
+
+2) MODE: Ensure "Custom" (or "自定義") mode is selected among the tabs (Easy, Custom, Soundtrack).
+   If not selected, click it first.
+
 {model_block}
 3) If there is a song title / project name field, set it from this JSON string (paste raw text only):
 {title_j}
@@ -144,6 +148,9 @@ You are on the music creation page in INSTRUMENTAL / 純音樂 mode (no singable
 
 1) Dismiss cookie banners, modals, or overlays that block inputs. Do NOT click Sign in, Try free now,
    Continue with Google, or any login/OAuth control.
+
+2) MODE: Ensure "Custom" (or "自定義") mode is selected among the tabs (Easy, Custom, Soundtrack).
+   If not selected, click it first.
 
 {model_block}
 

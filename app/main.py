@@ -300,47 +300,78 @@ async def _run_notion_queue_sequential(
     return results, all_ok
 
 
+async def _run_sheet_queue(
+    settings: AppSettings,
+    pending: list,
+) -> tuple[list[dict], bool]:
+    """從 Google Sheet 讀取列 → Mureka 生成 → 支援並行處理。"""
+    from app.services.sheet_service import update_song_result_in_sheet
+    from app.utils.cdp_targets import list_page_target_ids_matching_url_async
+
+    # 取得可用分頁
+    target_ids = await list_page_target_ids_matching_url_async(settings.browser_cdp_url)
+    eff = min(len(target_ids), settings.notion_parallel_max)
+    if eff <= 1:
+        return await _run_sheet_queue_sequential(settings, pending)
+
+    results: list[dict] = []
+    all_ok = True
+    for batch_start in range(0, len(pending), eff):
+        batch = pending[batch_start : batch_start + eff]
+        tids = target_ids[: len(batch)]
+        logger.info(
+            "Sheet 佇列並行：第 %s–%s 筆，使用 %s 個分頁",
+            batch_start + 1,
+            batch_start + len(batch),
+            len(tids),
+        )
+        coros = [
+            run_song_generation(
+                settings,
+                row.song,
+                attach_open_page=True,
+                existing_notion_page_id=None,
+                skip_notion=True,
+                cdp_focus_target_id=tid,
+            )
+            for row, tid in zip(batch, tids, strict=True)
+        ]
+        batch_results = await asyncio.gather(*coros)
+
+        for row, res in zip(batch, batch_results, strict=True):
+            try:
+                await update_song_result_in_sheet(settings, row.row_index, res)
+            except Exception as exc:
+                logger.warning("Sheet 回寫失敗（第 %s 列）：%s", row.row_index, exc)
+            results.append(res.model_dump(mode="json"))
+            if not res.success:
+                all_ok = False
+
+        if batch_start + eff < len(pending):
+            logger.info("已送出 8 首並行任務，暫停 180 秒讓伺服器消化...")
+            await asyncio.sleep(180)
+
+    return results, all_ok
+
+
 async def _run_sheet_queue_sequential(
     settings: AppSettings,
     pending: list,
 ) -> tuple[list[dict], bool]:
-    """從 Google Sheet 讀取列 → Mureka 生成 → 回寫 Sheet 結果（不碰 Notion）。"""
+    """備援：循序執行模式。"""
     from app.services.sheet_service import update_song_result_in_sheet
-
     results: list[dict] = []
     all_ok = True
     for i, row in enumerate(pending, start=1):
-        logger.info(
-            "[%s/%s] Sheet 第 %s 列 → Mureka：%r (instrumental=%s)",
-            i,
-            len(pending),
-            row.row_index,
-            row.song.song_title,
-            row.song.instrumental,
-        )
-        # existing_notion_page_id=None, skip_notion=True → 完全不碰 Notion
         result = await run_song_generation(
-            settings,
-            row.song,
-            attach_open_page=True,
-            existing_notion_page_id=None,
-            skip_notion=True,
+            settings, row.song, attach_open_page=True, existing_notion_page_id=None, skip_notion=True
         )
-        # 回寫 Sheet
-        try:
-            await update_song_result_in_sheet(settings, row.row_index, result)
-        except Exception as exc:
-            logger.warning("Sheet 回寫失敗（第 %s 列）：%s", row.row_index, exc)
-
+        await update_song_result_in_sheet(settings, row.row_index, result)
         results.append(result.model_dump(mode="json"))
         if not result.success:
             all_ok = False
-
-        # Burst limit
         if i % 8 == 0 and i < len(pending):
-            logger.info("已連續送出 8 首，暫停 3 分鐘...")
             await asyncio.sleep(180)
-
     return results, all_ok
 
 
@@ -490,7 +521,7 @@ async def _async_main() -> int:
                 original_len,
             )
 
-        results, all_ok = await _run_sheet_queue_sequential(settings, pending_sheet)
+        results, all_ok = await _run_sheet_queue(settings, pending_sheet)
         print(json.dumps(results, ensure_ascii=False, indent=2))
         return 0 if all_ok else 1
 

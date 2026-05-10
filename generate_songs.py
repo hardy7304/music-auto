@@ -41,50 +41,42 @@ def generate_songs_with_llm(settings: AppSettings, theme: str, count: int, mode:
     Generate EXACTLY {count} unique, professional-grade song concepts for the theme: "{theme}"
     If {count} is greater than 1, make sure each concept explores a DIFFERENT angle or mood of the theme.
 
-    Target lyric structure: {target_structure}
+    Target structure: {target_structure}
+
+    ═══ INSTRUMENTAL vs VOCAL RULE ═══
+    Check if the theme "{theme}" implies background music (配樂), BGM, or Instrumental (純音樂).
+    1. If it's a VOCAL song: Follow the poetic lyrics guidelines below.
+    2. If it's an INSTRUMENTAL (純音樂) song:
+       - Set "vocal" to "純音樂".
+       - In the "lyrics" field, DO NOT generate vocal lyrics. Instead, provide a detailed description of the musical arrangement, mood progression, and instrumentation (e.g. [0:00] Atmospheric piano start -> [0:45] Emotional cello enters...).
 
     ═══ LANGUAGE RULE ═══
     NEVER use Simplified Chinese (簡體中文). Verify every character.
-    NEVER output English, Arabic, or any non-Chinese characters in the lyrics (except style_tags).
-    If I see a single English word in the lyrics, you fail.
+    NEVER output English in the lyrics (except for structural tags like [Intro] or for Instrumental descriptions).
 
     ═══ SONG TITLE GUIDELINES ═══
-    The title is the SOUL of a song. Follow these rules strictly:
-    • Use literary devices: metaphor (暗喻), synesthesia (通感), personification (擬人), or oxymoron (矛盾修辭法).
-    • Evoke a vivid mental image or emotional scene — the listener should "see" the song before hearing it.
-    • Draw inspiration from the poetic naming styles of: 周杰倫 (Jay Chou), 五月天 (Mayday), 陳綺貞 (Cheer Chen), 林俊傑 (JJ Lin).
-    • Examples of GOOD titles: 「把回憶拗成月光」「呼吸裡的鯨魚」「時差裡的擁抱」「星塵做的繭」「日落販賣機」
-    • Examples of BAD titles (too generic): 「健身之歌」「愛情故事」「夏天的風」「快樂生活」
-    • Length: 3–8 characters preferred. Absolutely NO generic, literal, or dictionary-definition titles.
-    • Each title in the batch must feel like it belongs on a professional album tracklist.
+    The title is the SOUL of a song. Use metaphors and imagery.
+    Example: 「把回憶拗成月光」「呼吸裡的鯨魚」「時差裡的擁抱」
 
-    ═══ LYRICS GUIDELINES ═══
-    • The lyrics MUST be profoundly poetic, using heavy symbolism, metaphors, and sensory details (sight, sound, touch).
-    • AVOID literal or blunt storytelling. Use the "Show, Don't Tell" principle.
-    • For example: Instead of saying "I am sad", write "眼淚在眼眶裡溺水" (Tears are drowning in the eye sockets).
-    • For example: Instead of saying "I lost my way in the fog", write "指南針被回憶磁化，白雪覆蓋了回程" (The compass was magnetized by memories, white snow covered the return path).
-    • Ensure natural rhythm and singable phrasing. You MUST maintain consistent rhyming schemes (押韻) at the end of lines within the same section (e.g., AABB or ABAB).
-    • Each song MUST have a distinct emotional arc, building tension from the Verse to an explosive or deeply emotional Chorus.
+    ═══ LYRICS GUIDELINES (FOR VOCAL SONGS ONLY) ═══
+    • The lyrics MUST be profoundly poetic, using heavy symbolism and metaphors.
+    • AVOID literal or blunt storytelling. Maintain consistent rhyming schemes.
 
     ═══ OUTPUT FORMAT ═══
-    Because you are in JSON object mode, you MUST return a single JSON object.
-    The JSON object MUST have EXACTLY two keys:
-    1. "thought": A string containing your brief brainstorming of metaphors, imagery, and poetic concepts in Chinese.
-    2. "songs": A JSON array containing EXACTLY {count} song objects.
+    Return a single JSON object with:
+    1. "thought": Brief brainstorming in Chinese.
+    2. "songs": Array of {count} objects.
 
-    Each song object in the "songs" array MUST have:
-    - song_title: Poetic, imagery-rich title in 繁體中文 (follow guidelines above).
-    - lyrics: Full lyrics in 繁體中文 with tags [Intro], [Verse 1], [Pre-Chorus], etc. MUST use actual newlines (\n) between each line and tag! DO NOT write it as a single continuous sentence.
-    - style_tags: High-detail ENGLISH music production metadata. MUST follow this rich format:
-      "Genre/Era • Sub-genre/Influence • Specific Instrumentation • Vocal Style/Texture • Aesthetic/Mood • Production details".
-      Example: "Jay-Z-inspired • Boom-Bap meets Modern Trap • Piano riff + hard-knock drums • Confident vocal delivery • Orchestral horns • New York grit aesthetic • Production: Blueprint-era meets 2026 stadium rap".
-      NEVER just provide 1-2 words. Be extremely descriptive for the music engine.
+    Each song object MUST have:
+    - song_title: Poetic title in 繁體中文.
+    - lyrics: Full lyrics (vocal) OR musical progression (instrumental) with structural tags.
+    - style_tags: High-detail ENGLISH music production metadata (Genre • Instrumentation • Mood • Production).
     - vocal: One of ["男聲", "女聲", "男女對唱", "合音", "團體", "饒舌", "純音樂"].
-    - usage_scenario: JSON array of 繁體中文 strings describing usage.
+    - usage_scenario: Array of 繁體中文 strings.
     - energy_level: One of "高能量", "低沉", "舒緩", "爆發力".
     - bpm: Integer.
     - key: e.g. "C Major".
-    - release_date: Must be "{current_month}".
+    - release_date: "{current_month}".
     """
 
     text = ""
@@ -289,12 +281,20 @@ def generate_songs_with_llm(settings: AppSettings, theme: str, count: int, mode:
             prefix = datetime.datetime.now().strftime("%Y%m%d") + " 張嘉豪 "
             final_title = prefix + title
             
+            # 如果是純音樂，將音樂進度描述移至 style_tags，並清空 lyrics 以防 Mureka 誤唱
+            is_instrumental = (vocal_type == "純音樂")
+            if is_instrumental:
+                # 將描述附加到 style_tags
+                styles = f"{styles} • Musical Progression: {lyrics.replace('\\n', ' ')}"
+                # 清空 lyrics 避免自動化程式填入歌詞框
+                lyrics = ""
+
             songs.append(SongInput(
                 song_title=final_title,
                 lyrics=lyrics,
                 style_tags=styles,
                 vocal=vocal_type,
-                instrumental=True if vocal_type == "純音樂" else False,
+                instrumental=is_instrumental,
                 extra_notion_props=extra_props
             ))
         
