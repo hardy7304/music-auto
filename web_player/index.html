@@ -3,138 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURORA AUDIO | Professional Music Collection</title>
+    <title>AURORA AUDIO | Professional Music Player</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-accent: #FFFFFF;
-            --brand-gold: #D4AF37;
-            --dark-bg: #050505;
-            --card-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --text-main: #FFFFFF;
-            --text-dim: rgba(255, 255, 255, 0.4);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            background: var(--dark-bg);
-            color: var(--text-main);
-            font-family: 'Outfit', 'Noto Sans TC', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            overflow-x: hidden;
-        }
-
-        .glass-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
-            z-index: -1;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            background: rgba(10, 10, 10, 0.7);
-            backdrop-filter: blur(40px);
-            -webkit-backdrop-filter: blur(40px);
-            border: 1px solid var(--glass-border);
-            padding: clamp(20px, 4vw, 50px);
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.5);
-        }
-
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 30px; border-bottom: 1px solid var(--glass-border);
-            padding-bottom: 20px;
-        }
-
-        .logo { display: flex; align-items: center; gap: 12px; }
-        .brand-icon {
-            width: 18px; height: 18px; background: var(--brand-gold);
-            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-        }
-        .logo h1 { font-size: 15px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; }
-
-        .user-name { font-size: 10px; letter-spacing: 2px; color: var(--text-dim); }
-
-        main {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: clamp(20px, 4vw, 60px);
-            min-height: 0;
-        }
-
-        /* Player Section */
-        .album-cover {
-            width: 100%; aspect-ratio: 1/1; max-width: 400px;
-            border-radius: 4px; background-size: cover; background-position: center;
-            margin-bottom: 25px; box-shadow: 0 30px 60px rgba(0,0,0,0.7);
-        }
-
-        .song-info h2 { font-size: clamp(24px, 3vw, 32px); font-weight: 600; margin-bottom: 6px; }
-        .song-info p { color: var(--text-dim); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 25px; }
-
-        /* Lyrics Container */
-        .lyrics-section {
-            display: flex; flex-direction: column; height: 100%; min-height: 350px;
-            position: relative; overflow: hidden;
-        }
-
-        .lyrics-wrapper {
-            flex: 1; overflow-y: auto; scroll-behavior: smooth;
-            padding: 100px 0; mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
-            -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
-        }
-
-        .lyrics-wrapper::-webkit-scrollbar { display: none; }
-
-        .lyric-line {
-            font-size: 20px; font-weight: 500; color: var(--text-dim);
-            padding: 15px 0; transition: all 0.4s ease; cursor: pointer;
-            line-height: 1.5;
-        }
-
-        .lyric-line.active {
-            color: #fff; font-size: 26px; font-weight: 700;
-            transform: scale(1.05); text-shadow: 0 0 20px rgba(255,255,255,0.3);
-        }
-
-        /* Controls */
-        .player-controls { margin-top: auto; }
-        .progress-container {
-            display: flex; align-items: center; gap: 15px; margin-bottom: 20px;
-            font-size: 11px; color: var(--text-dim); font-family: monospace;
-        }
-        .progress-bar { flex: 1; height: 2px; background: rgba(255,255,255,0.05); cursor: pointer; }
-        .progress-fill { width: 0%; height: 100%; background: var(--brand-gold); }
-
-        .buttons { display: flex; gap: 30px; align-items: center; justify-content: center; }
-        .play-btn {
-            width: 60px; height: 60px; background: #fff; color: #000;
-            border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            font-size: 20px; cursor: pointer;
-        }
-
-        /* Mobile */
-        @media (max-width: 850px) {
-            body { align-items: flex-start; padding: 0; }
-            .container { max-width: 100%; min-height: 100vh; border: none; }
-            main { grid-template-columns: 1fr; }
-            .album-cover { max-width: 250px; margin: 0 auto 20px auto; }
-            .song-info { text-align: center; }
-            .lyrics-wrapper { padding: 50px 0; height: 300px; }
-        }
-    </style>
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
+    <div id="play-overlay">
+        <div class="overlay-content">
+            <h2>AURORA AUDIO</h2>
+            <p>點擊下方按鈕以啟動播放器</p>
+            <button class="start-btn" onclick="startApp()">立即啟動</button>
+        </div>
+    </div>
+
     <div class="glass-bg"></div>
     <div class="container">
         <header>
@@ -143,200 +25,57 @@
                 <h1>AURORA <span>AUDIO</span></h1>
             </div>
             <div class="user-profile">
-                <span class="user-name">ZHANG JIAHAO</span>
+                <span class="user-name">ZHANG JIAHAO | PREMIUM</span>
             </div>
         </header>
 
         <main>
-            <div class="player-section">
-                <div class="main-card">
-                    <div id="current-cover" class="album-cover"></div>
-                    <div class="song-info">
-                        <h2 id="current-title">載入中...</h2>
-                        <p id="current-artist">AURORA AI</p>
+            <section class="player-section">
+                <div id="current-cover" class="album-cover"></div>
+                <div class="song-info">
+                    <h2 id="current-title">載入中...</h2>
+                    <p id="current-artist">AURORA AI v9 Engine</p>
+                </div>
+                
+                <div class="player-controls">
+                    <div class="progress-container">
+                        <span id="current-time">00:00</span>
+                        <div class="progress-bar" id="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <span id="total-duration">00:00</span>
                     </div>
-                    <div class="player-controls">
-                        <div class="progress-container">
-                            <span id="current-time">00:00</span>
-                            <div class="progress-bar" id="progress-bar">
-                                <div class="progress-fill" id="progress-fill"></div>
-                            </div>
-                            <span id="total-duration">00:00</span>
-                        </div>
-                        <div class="buttons">
-                            <button id="prev-btn" style="background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-step-backward"></i></button>
-                            <button id="play-btn" class="play-btn"><i class="fas fa-play"></i></button>
-                            <button id="next-btn" style="background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-step-forward"></i></button>
-                        </div>
+                    
+                    <div class="buttons">
+                        <!-- 只保留播放按鈕，其餘移除 -->
+                        <button id="play-btn" class="play-btn"><i class="fas fa-play"></i></button>
                     </div>
                 </div>
-            </div>
+                
+                <div class="hint-text">
+                    LRC/SRT SYNC ACTIVE • AUTO-TRADITIONAL
+                </div>
+            </section>
 
-            <div class="lyrics-section">
-                <div class="lyrics-wrapper" id="lyrics-container">
-                    <!-- Lyrics will be injected here -->
-                </div>
-            </div>
+            <section class="lyrics-section">
+                <div class="lyrics-wrapper" id="lyrics-container"></div>
+            </section>
         </main>
     </div>
 
-    <audio id="audio-element"></audio>
+    <div id="status-bar">SYSTEM READY</div>
 
+    <!-- 音訊來源鎖定 -->
+    <audio id="audio-element" src="music/aurora-song.mp3" preload="auto"></audio>
+
+    <script src="index.js"></script>
     <script>
-        const songs = [
-            {
-                title: "歸隱雲深處",
-                artist: "AURORA AI v9 Engine",
-                cover: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=2070&auto=format&fit=crop",
-                src: "https://pub-64e3ab309dec4a519038599498fbb431.r2.dev/20260510%20%E5%BC%B5%E5%98%89%E8%B1%AA%20%E6%AD%B8%E9%9A%B1%E9%9B%B2%E6%B7%B1%E8%99%95.mp3",
-                lyrics: `[00:00.00] 歸隱雲深處 - AURORA AI
-[00:05.00] 製作：張嘉豪
-[00:10.00] ---
-[00:12.00] 雲深不知處
-[00:14.50] 隻身入山林
-[00:17.00] 泉水清石上
-[00:19.50] 晚風動弦音
-[00:22.00] 這是示範歌詞同步效果
-[00:25.50] 您可以自行修改 index.html 裡的內容
-[00:29.00] 享受 AURORA AUDIO 的純淨音質
-[00:32.00] 
-[00:35.00] 雲深不知處
-[00:37.50] 隻身入山林
-[00:40.00] 泉水清石上
-[00:42.50] 晚風動弦音
-[00:45.00] 這是示範歌詞同步效果
-[00:48.50] 您可以自行修改 index.html 裡的內容
-[00:52.00] 享受 AURORA AUDIO 的純淨音質
-[00:55.00] 
-[00:58.00] 雲深不知處
-[01:00.50] 隻身入山林
-[01:03.00] 泉水清石上
-[01:05.50] 晚風動弦音
-[01:08.00] 這是示範歌詞同步效果
-[01:11.50] 您可以自行修改 index.html 裡的內容
-[01:15.00] 享受 AURORA AUDIO 的純淨音質
-[01:18.00] 
-[01:20.00] 雲深不知處
-[01:22.50] 隻身入山林
-[01:25.00] 泉水清石上
-[01:27.50] 晚風動弦音
-[01:30.00] 這是示範歌詞同步效果
-[01:33.50] 您可以自行修改 index.html 裡的內容
-[01:37.00] 享受 AURORA AUDIO 的純淨音質
-[03:58.00] 雲深不知處
-[04:00.50] 隻身入山林
-[04:03.00] 泉水清石上
-[04:04.00] 歸隱雲深處 - AURORA AI`
-            }
-        ];
-
-        let currentSongIndex = 0;
-        let isPlaying = false;
-        let lyricData = [];
-
-        const audio = document.getElementById('audio-element');
-        const playBtn = document.getElementById('play-btn');
-        const progressFill = document.getElementById('progress-fill');
-        const progressBar = document.getElementById('progress-bar');
-        const lyricsContainer = document.getElementById('lyrics-container');
-
-        function initPlayer() {
-            loadSong(currentSongIndex);
-        }
-
-        function parseLyrics(lrc) {
-            const lines = lrc.trim().split('\n');
-            const result = [];
-            lines.forEach(line => {
-                const match = line.match(/\[(\d+):(\d+\.\d+)\](.*)/);
-                if (match) {
-                    const time = parseInt(match[1]) * 60 + parseFloat(match[2]);
-                    result.push({ time, text: match[3].trim() });
-                }
-            });
-            return result;
-        }
-
-        function loadSong(index) {
-            const song = songs[index];
-            document.getElementById('current-title').textContent = song.title;
-            document.getElementById('current-artist').textContent = song.artist;
-            document.getElementById('current-cover').style.backgroundImage = `url(${song.cover})`;
-            audio.src = song.src;
-            
-            // Parse and render lyrics
-            lyricData = parseLyrics(song.lyrics || "");
-            renderLyrics();
-        }
-
-        function renderLyrics() {
-            lyricsContainer.innerHTML = '';
-            lyricData.forEach((line, index) => {
-                const div = document.createElement('div');
-                div.className = 'lyric-line';
-                div.id = `lyric-line-${index}`;
-                div.textContent = line.text;
-                div.onclick = () => { audio.currentTime = line.time; };
-                lyricsContainer.appendChild(div);
-            });
-        }
-
-        function updateLyrics(currentTime) {
-            let activeIndex = -1;
-            for (let i = 0; i < lyricData.length; i++) {
-                if (currentTime >= lyricData[i].time) {
-                    activeIndex = i;
-                } else {
-                    break;
-                }
-            }
-
-            if (activeIndex !== -1) {
-                const lines = document.querySelectorAll('.lyric-line');
-                lines.forEach((line, idx) => {
-                    if (idx === activeIndex) {
-                        line.classList.add('active');
-                        // Scroll to center
-                        const containerHeight = lyricsContainer.parentElement.offsetHeight;
-                        const lineTop = line.offsetTop;
-                        const lineHeight = line.offsetHeight;
-                        lyricsContainer.parentElement.scrollTop = lineTop - (containerHeight / 2) + (lineHeight / 2);
-                    } else {
-                        line.classList.remove('active');
-                    }
-                });
+        function startApp() {
+            document.getElementById('play-overlay').style.display = 'none';
+            if (window.appTogglePlay) {
+                window.appTogglePlay();
             }
         }
-
-        function togglePlay() {
-            if (isPlaying) { audio.pause(); playBtn.innerHTML = '<i class="fas fa-play"></i>'; }
-            else { audio.play(); playBtn.innerHTML = '<i class="fas fa-pause"></i>'; }
-            isPlaying = !isPlaying;
-        }
-
-        audio.addEventListener('timeupdate', () => {
-            const { duration, currentTime } = audio;
-            progressFill.style.width = `${(currentTime / duration) * 100}%`;
-            document.getElementById('current-time').textContent = formatTime(currentTime);
-            if (duration) document.getElementById('total-duration').textContent = formatTime(duration);
-            
-            updateLyrics(currentTime);
-        });
-
-        function formatTime(time) {
-            const min = Math.floor(time / 60);
-            const sec = Math.floor(time % 60);
-            return `${min < 10 ? '0' : ''}${min}:${sec < 10 ? '0' : ''}${sec}`;
-        }
-
-        playBtn.onclick = togglePlay;
-        progressBar.onclick = (e) => {
-            const width = progressBar.clientWidth;
-            const clickX = e.offsetX;
-            audio.currentTime = (clickX / width) * audio.duration;
-        };
-
-        initPlayer();
     </script>
 </body>
 </html>
