@@ -23,16 +23,12 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
     overflow: hidden;
 }
 
 .glass-bg {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     background: radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
     z-index: -1;
 }
@@ -56,31 +52,14 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     border-bottom: 1px solid var(--glass-border);
     padding-bottom: 15px;
     flex-shrink: 0;
 }
 
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.brand-icon {
-    width: 18px;
-    height: 18px;
-    background: var(--brand-gold);
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-}
-
-.logo h1 {
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-}
+.logo h1 { font-size: 14px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; }
+.header-tag { font-size: 10px; letter-spacing: 2px; color: var(--text-dim); }
 
 main {
     display: grid;
@@ -90,11 +69,7 @@ main {
     min-height: 0;
 }
 
-.player-section {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
+.player-section { display: flex; flex-direction: column; height: 100%; }
 
 .album-cover {
     width: 100%;
@@ -107,20 +82,24 @@ main {
     box-shadow: 0 20px 40px rgba(0,0,0,0.7);
 }
 
-.song-info {
-    margin-bottom: auto;
-}
+.song-info { margin-bottom: 20px; }
+.song-info h2 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
 
-.song-info h2 {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.song-info p {
+.producer-info {
+    font-size: 11px;
+    letter-spacing: 1.5px;
     color: var(--text-dim);
-    font-size: 10px;
-    letter-spacing: 2px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.gold-text { color: var(--brand-gold); font-weight: 700; }
+.sub-text { font-size: 10px; margin-left: 8px; opacity: 0.8; font-weight: 400; }
+
+.engine-info {
+    font-size: 8px;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.2);
     text-transform: uppercase;
 }
 
@@ -136,14 +115,12 @@ main {
     flex: 1;
     overflow-y: auto;
     scroll-behavior: smooth;
-    padding: 35vh 0; /* 回到適中內距 */
-    mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
-    -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+    padding: 35vh 0;
+    mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
 }
 
-.lyrics-wrapper::-webkit-scrollbar {
-    display: none;
-}
+.lyrics-wrapper::-webkit-scrollbar { display: none; }
 
 .lyric-line {
     font-size: 19px;
@@ -151,95 +128,66 @@ main {
     color: var(--text-dim);
     padding: 15px 0;
     transition: all 0.4s ease;
-    cursor: pointer;
     line-height: 1.4;
-    border-radius: 8px;
-    opacity: 1; /* 還原不透明度 */
-}
-
-.lyric-line:hover {
-    background: rgba(255,255,255,0.05);
-    color: var(--brand-gold);
 }
 
 .lyric-line.active {
     color: #fff;
-    font-size: 26px; /* 還原適中大小 */
+    font-size: 26px;
     font-weight: 700;
-    transform: translateX(10px);
     text-shadow: 0 0 20px rgba(255,255,255,0.4);
-}
-
-.player-controls {
-    padding-top: 20px;
 }
 
 .progress-container {
     display: flex;
     align-items: center;
     gap: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     font-size: 10px;
     color: var(--text-dim);
 }
 
-.progress-bar {
-    flex: 1;
-    height: 8px;
-    background: rgba(255,255,255,0.1);
-    cursor: pointer;
-    border-radius: 4px;
-    position: relative;
-}
-
-.progress-fill {
-    width: 0%;
-    height: 100%;
-    background: var(--brand-gold);
-    border-radius: 4px;
-}
-
-.buttons {
-    display: flex;
-    gap: 30px;
-    align-items: center;
-    justify-content: center;
-}
+.progress-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; }
+.progress-fill { width: 0%; height: 100%; background: var(--brand-gold); border-radius: 3px; }
 
 .play-btn {
-    width: 60px;
-    height: 60px;
-    background: #fff;
-    color: #000;
+    width: 60px; height: 60px;
+    background: #fff; color: #000;
     border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 22px;
-    cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 22px; cursor: pointer;
+    margin: 0 auto;
 }
 
-.hint-text {
-    margin-top: 20px;
-    font-size: 9px;
-    color: var(--text-dim);
-    text-align: center;
-}
-
-#status-bar {
-    position: fixed;
-    bottom: 10px;
-    left: 20px;
-    font-size: 9px;
-    color: var(--text-dim);
-}
-
-#play-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.9);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
+/* 【手機版優化】 */
+@media (max-width: 768px) {
+    body { padding: 0; }
+    .container {
+        height: 100vh; width: 100vw; max-width: none;
+        border: none; border-radius: 0;
+        padding: 20px 20px 40px 20px; /* 增加底部間距避免按鈕擠壓 */
+    }
+    
+    header { border-bottom: none; margin-bottom: 5px; }
+    header h1 { font-size: 12px; }
+    .header-tag { display: none; }
+    
+    main { grid-template-columns: 1fr; gap: 5px; }
+    
+    .album-cover { max-height: 220px; margin-bottom: 10px; }
+    
+    .song-info { text-align: center; margin-bottom: 15px; }
+    .song-info h2 { font-size: 20px; }
+    
+    .producer-info { font-size: 9px; line-height: 1.5; }
+    .sub-text { display: block; margin-left: 0; margin-top: 1px; }
+    
+    .lyrics-wrapper { 
+        padding: 20vh 0; /* 縮小手機版 padding 讓捲動空間更大 */
+        mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+        -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
+    }
+    
+    .lyric-line { font-size: 15px; padding: 10px 0; text-align: center; }
+    .lyric-line.active { font-size: 19px; }
 }

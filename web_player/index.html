@@ -2,41 +2,37 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURORA AUDIO | Professional Music Player</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AURORA | Professional AI Audio Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
 </head>
 <body>
-    <div id="play-overlay">
-        <div class="overlay-content">
-            <h2>AURORA AUDIO</h2>
-            <p>點擊下方按鈕以啟動播放器</p>
-            <button class="start-btn" onclick="startApp()">立即啟動</button>
-        </div>
-    </div>
-
     <div class="glass-bg"></div>
+
     <div class="container">
         <header>
             <div class="logo">
                 <div class="brand-icon"></div>
-                <h1>AURORA <span>AUDIO</span></h1>
+                <h1>Aurora Audio</h1>
             </div>
-            <div class="user-profile">
-                <span class="user-name">ZHANG JIAHAO | PREMIUM</span>
-            </div>
+            <div class="header-tag">ZHANG JIAHAO | PREMIUM</div>
         </header>
 
         <main>
             <section class="player-section">
-                <div id="current-cover" class="album-cover"></div>
+                <div class="album-cover" id="current-cover"></div>
+                
                 <div class="song-info">
                     <h2 id="current-title">載入中...</h2>
-                    <p id="current-artist">AURORA AI v9 Engine</p>
+                    <p class="producer-info">
+                        PRODUCER <span class="gold-text">張嘉豪</span> 
+                        <span class="sub-text">柔手運動按摩 & 柔手傳統整復推拿</span>
+                    </p>
+                    <p class="engine-info">AURORA AI V9 HIGH-FIDELITY ENGINE</p>
                 </div>
-                
+
                 <div class="player-controls">
                     <div class="progress-container">
                         <span id="current-time">00:00</span>
@@ -45,37 +41,25 @@
                         </div>
                         <span id="total-duration">00:00</span>
                     </div>
-                    
+
                     <div class="buttons">
-                        <!-- 只保留播放按鈕，其餘移除 -->
-                        <button id="play-btn" class="play-btn"><i class="fas fa-play"></i></button>
+                        <div class="play-btn" id="play-btn">
+                            <i class="fas fa-play"></i>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="hint-text">
-                    LRC/SRT SYNC ACTIVE • AUTO-TRADITIONAL
                 </div>
             </section>
 
             <section class="lyrics-section">
-                <div class="lyrics-wrapper" id="lyrics-container"></div>
+                <div class="lyrics-wrapper" id="lyrics-container">
+                    <!-- 歌詞內容 -->
+                </div>
             </section>
         </main>
     </div>
 
-    <div id="status-bar">SYSTEM READY</div>
-
-    <!-- 音訊來源鎖定 -->
-    <audio id="audio-element" src="music/aurora-song.mp3" preload="auto"></audio>
+    <audio id="audio-element"></audio>
 
     <script src="index.js"></script>
-    <script>
-        function startApp() {
-            document.getElementById('play-overlay').style.display = 'none';
-            if (window.appTogglePlay) {
-                window.appTogglePlay();
-            }
-        }
-    </script>
 </body>
 </html>

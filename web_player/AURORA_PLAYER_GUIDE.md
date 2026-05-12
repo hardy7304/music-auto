@@ -1,38 +1,42 @@
-# AURORA Professional Web Player - 最終維護指南
+# AURORA Professional Web Player - 最終維護與雲端佈署指南
 
-這份文件紀錄了 AURORA 播放器的所有核心功能、目錄結構以及操作方法，方便您日後維護與擴充。
+這份文件紀錄了 AURORA 播放器的最終版本功能、雲端架構以及手機版優化細節。
 
-## 核心功能清單
-- **精準進度跳轉**：支援進度條點擊/拖曳，且音樂不會跳回起點（已解決 Range Request 伺服器問題）。
-- **沉浸式歌詞同步**：歌詞會隨音樂播放自動捲動至中央並高亮，支援點擊歌詞即時跳轉。
-- **雙重繁體化機制**：
-  1. **即時轉換**：播放器內建 2500 字對照表，載入時自動將簡體轉繁體。
-  2. **AI 深度轉換**：提供 `一鍵繁體化.bat`，利用 NVIDIA Llama 3.3 進行 100% 準確的翻譯。
-- **強大解析器**：支援標準 SRT、LRC，以及 AI 產生的「單行壓縮式」SRT 格式。
+## 核心成果總結
+- **雲端混合架構**：前端託管於 **Cloudflare Pages**，音樂與歌詞資產託管於 **Cloudflare R2**。
+- **手機版深度適配**：全螢幕橫向佈局、歌詞置中、隱藏次要資訊，提供類似 Spotify 的流暢體驗。
+- **極速同步校準**：內建 `syncOffset: 0.45s`，補償行動裝置音訊延遲。
+- **抗當機解析器**：採用高效能 DocumentFragment 渲染與暴力容錯解析，確保大檔案不卡死。
+- **個人品牌整合**：製作人標記「張嘉豪 | 柔手運動按摩 & 柔手傳統整復推拿」。
 
-## 目錄結構說明
-- `web_player/`
-  - `index.html`：播放器主畫面。
-  - `index.js`：核心邏輯（解析、同步、跳轉）。
-  - `index.css`：黑金美學介面設計。
-  - `range_server.py`：**關鍵**！支援區段讀取的專用伺服器，解決跳轉問題。
-  - `啟動播放器.bat`：一鍵開啟伺服器並自動打開瀏覽器。
-  - `一鍵繁體化.bat`：一鍵呼叫 AI 翻譯歌詞。
-  - `music/`：存放 MP3 檔案。
-  - `lyrics/`：存放歌詞檔案（`.srt` 或 `.lrc`）。
+## 雲端佈署關鍵步驟
 
-## 操作指令集
+### 1. Cloudflare R2 (資產中心)
+- **Bucket 名稱**：`mureka-playlist`
+- **目錄結構**：
+  - `music/aurora-song.mp3`
+  - `lyrics/aurora-song.srt`
+- **CORS 設定 (必做)**：請在 R2 設定中貼入以下 JSON，否則歌詞無法顯示：
+  ```json
+  [
+    {
+      "AllowedOrigins": ["*"],
+      "AllowedMethods": ["GET", "HEAD"],
+      "AllowedHeaders": ["Range"],
+      "ExposeHeaders": ["Content-Range", "Content-Length", "Accept-Ranges"],
+      "MaxAgeSeconds": 3000
+    }
+  ]
+  ```
 
-### 1. 如何換歌？
-1. 將新的 MP3 放進 `music/`。
-2. 將對應的歌詞放進 `lyrics/`。
-3. 確保檔名與 `index.js` 中的 `config` 設定一致，或將檔案命名為 `aurora-song.mp3`。
+### 2. Cloudflare Pages (網頁中心)
+- **上傳檔案**：`index.html`, `index.js`, `index.css`。
+- **注意事項**：若修改了 `index.js` 裡的 `r2_base_url`，必須重新部署一次 Pages。
 
-### 2. 如何修正歌詞簡體字？
-- 執行 `web_player/一鍵繁體化.bat`，AI 會自動處理。
-
-### 3. 如何啟動？
-- 執行 `web_player/啟動播放器.bat`。
+## 維護指令
+- **本地預覽**：點擊 `啟動播放器.bat`。
+- **AI 繁體化**：將 SRT 放入 `lyrics/` 後點擊 `一鍵繁體化.bat`。
 
 ---
-*本播放器由 Antigravity AI 協助開發，專為專業音樂同步與極簡美學打造。*
+**專案紀錄日期：2026-05-12**  
+**開發者：Antigravity AI & 張嘉豪**
