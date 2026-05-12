@@ -111,3 +111,9 @@ browser_profile/
 google_key.json
 *.pem
 *.key
+
+# Mureka Downloads & History
+downloads/
+download_history.txt
+.venv_lrc/
+scratch/

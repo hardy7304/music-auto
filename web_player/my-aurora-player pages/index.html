@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AURORA | Professional AI Audio Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="glass-bg"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="brand-icon"></div>
+                <h1>Aurora Audio</h1>
+            </div>
+            <div class="header-tag">ZHANG JIAHAO | PREMIUM</div>
+        </header>
+
+        <main>
+            <section class="player-section">
+                <div class="album-cover" id="current-cover"></div>
+                
+                <div class="song-info">
+                    <h2 id="current-title">載入中...</h2>
+                    <p class="producer-info">
+                        PRODUCER <span class="gold-text">張嘉豪</span> 
+                        <span class="sub-text">柔手運動按摩 & 柔手傳統整復推拿</span>
+                    </p>
+                    <p class="engine-info">AURORA AI V9 HIGH-FIDELITY ENGINE</p>
+                </div>
+
+                <div class="player-controls">
+                    <div class="progress-container">
+                        <span id="current-time">00:00</span>
+                        <div class="progress-bar" id="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <span id="total-duration">00:00</span>
+                    </div>
+
+                    <div class="buttons">
+                        <div class="play-btn" id="play-btn">
+                            <i class="fas fa-play"></i>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="lyrics-section">
+                <div class="lyrics-wrapper" id="lyrics-container">
+                    <!-- 歌詞內容 -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <audio id="audio-element"></audio>
+
+    <script src="index.js"></script>
+</body>
+</html>
