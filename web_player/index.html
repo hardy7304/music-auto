@@ -36,23 +36,49 @@
                 <div class="player-controls">
                     <div class="progress-container">
                         <span id="current-time">00:00</span>
-                        <div class="progress-bar" id="progress-bar">
-                            <div class="progress-fill" id="progress-fill"></div>
-                        </div>
+                        <!-- 改用原生 Range Input，徹底解決跳轉問題 -->
+                        <input type="range" id="seek-slider" class="seek-slider" min="0" max="100" value="0">
                         <span id="total-duration">00:00</span>
                     </div>
 
                     <div class="buttons">
-                        <div class="play-btn" id="play-btn">
+                        <button class="ctrl-btn" id="prev-btn" title="上一首">
+                            <i class="fas fa-step-backward"></i>
+                        </button>
+                        <button class="play-btn" id="play-btn" title="播放/暫停">
                             <i class="fas fa-play"></i>
-                        </div>
+                        </button>
+                        <button class="ctrl-btn" id="next-btn" title="下一首">
+                            <i class="fas fa-step-forward"></i>
+                        </button>
+                    </div>
+
+                    <div class="download-row" id="download-row" style="display:none;">
+                        <button class="download-btn" id="download-btn" title="下載 MP3">
+                            <i class="fas fa-download"></i>
+                            <span>下載 MP3</span>
+                        </button>
+                        <span class="download-hint" id="download-hint"></span>
                     </div>
                 </div>
             </section>
 
             <section class="lyrics-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-align-left"></i> LYRICS</h3>
+                </div>
                 <div class="lyrics-wrapper" id="lyrics-container">
                     <!-- 歌詞內容 -->
+                </div>
+            </section>
+
+            <section class="playlist-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-list"></i> PLAYLIST</h3>
+                    <span class="count-tag" id="song-count">0 SONGS</span>
+                </div>
+                <div class="playlist-wrapper" id="playlist-container">
+                    <!-- 歌曲清單 -->
                 </div>
             </section>
         </main>

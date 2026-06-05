@@ -6,9 +6,22 @@
   const stopBtn = document.getElementById("stopBtn");
   const runStatus = document.getElementById("runStatus");
 
+  // ── 下載中心元素 ──
+  const dlLog = document.getElementById("dlLog");
+  const dlRunBtn = document.getElementById("dlRunBtn");
+  const dlStopBtn = document.getElementById("dlStopBtn");
+  const dlStatus = document.getElementById("dlStatus");
+  const dlStats = document.getElementById("dlStats");
+  const dlNewCount = document.getElementById("dlNewCount");
+  const dlTotalCount = document.getElementById("dlTotalCount");
+
   let runStreamSupported = false;
   let runAbort = null;
+  let dlAbort = null;
 
+  // ═══════════════════════════════════════════════════
+  // SSE 解析通用函式
+  // ═══════════════════════════════════════════════════
   function parseSseBlock(block) {
     const lines = block.split("\n");
     const dataLines = [];
@@ -35,25 +48,9 @@
     return "HTTP " + status + "\n" + (detail || "(無詳情)");
   }
 
-  async function runViaBatch(body, t0, signal) {
-    const r = await fetch("/api/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: signal,
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok) return formatHttpError(r.status, data);
-    const elapsed = Math.round((Date.now() - t0) / 1000);
-    return [
-      "（整包模式：總耗時約 " + elapsed + " 秒）",
-      "$ " + (data.command || []).join(" "),
-      "--- stdout ---",
-      data.stdout || "(空)",
-      "--- exit " + data.exit_code + " ---",
-    ].join("\n");
-  }
-
+  // ═══════════════════════════════════════════════════
+  // Meta
+  // ═══════════════════════════════════════════════════
   async function loadMeta() {
     try {
       const r = await fetch("/api/meta");
@@ -66,6 +63,9 @@
     }
   }
 
+  // ═══════════════════════════════════════════════════
+  // Helper: 取得 radio 值
+  // ═══════════════════════════════════════════════════
   function getRadioValue(name) {
     const el = document.querySelector(`input[name="${name}"]:checked`);
     return el ? el.value : null;
@@ -84,6 +84,9 @@
     return "full";
   }
 
+  // ═══════════════════════════════════════════════════
+  // 歌曲生成 — Stream
+  // ═══════════════════════════════════════════════════
   async function requestStop() {
     try {
       const r = await fetch("/api/run/stop", { method: "POST" });
@@ -93,11 +96,9 @@
     } catch (e) { console.error(e); }
   }
 
-  if (stopBtn) {
-    stopBtn.addEventListener("click", requestStop);
-  }
+  if (stopBtn) stopBtn.addEventListener("click", requestStop);
 
-  // Toggle UI sections based on preset
+  // Toggle UI based on preset
   runForm.addEventListener("change", (ev) => {
     if (ev.target.name === "preset") {
       const preset = ev.target.value;
@@ -130,6 +131,7 @@
     runBtn.disabled = true;
     if (stopBtn) stopBtn.disabled = false;
     runStatus.hidden = false;
+    runStatus.textContent = "發送請求中...";
     logOut.textContent = "發送請求中...\n";
 
     const t0 = Date.now();
@@ -203,5 +205,127 @@
     }
   });
 
+  async function runViaBatch(body, t0, signal) {
+    const r = await fetch("/api/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: signal,
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) return formatHttpError(r.status, data);
+    const elapsed = Math.round((Date.now() - t0) / 1000);
+    return [
+      "（整包模式：總耗時約 " + elapsed + " 秒）",
+      "$ " + (data.command || []).join(" "),
+      "--- stdout ---",
+      data.stdout || "(空)",
+      "--- exit " + data.exit_code + " ---",
+    ].join("\n");
+  }
+
+  // ═══════════════════════════════════════════════════
+  // 下載中心 — 獨立邏輯（不影響歌曲生成）
+  // ═══════════════════════════════════════════════════
+  async function downloadStop() {
+    try {
+      await fetch("/api/download/stop", { method: "POST" });
+      if (dlAbort) dlAbort.abort();
+    } catch (e) { console.error(e); }
+  }
+
+  if (dlStopBtn) dlStopBtn.addEventListener("click", downloadStop);
+  if (dlRunBtn) dlRunBtn.addEventListener("click", startDownload);
+
+  async function startDownload() {
+    dlAbort = new AbortController();
+    dlRunBtn.disabled = true;
+    dlStopBtn.disabled = false;
+    dlStatus.hidden = false;
+    dlStatus.className = "dl-status running";
+    dlStatus.textContent = "⬇️ 下載中... 正在連接 Chrome";
+    dlLog.textContent = "發送請求中...\n";
+    dlStats.hidden = true;
+
+    const t0 = Date.now();
+    const timer = setInterval(() => {
+      const sec = Math.floor((Date.now() - t0) / 1000);
+      dlStatus.textContent = `⬇️ 下載中 · 已 ${sec} 秒`;
+    }, 1000);
+
+    let header = "", output = "";
+
+    try {
+      const selectedProfile = getRadioValue("dl_profile") || "basic";
+      const r = await fetch("/api/download/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ library_url: null, profile: selectedProfile }),
+        signal: dlAbort.signal,
+      });
+
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        dlLog.textContent = formatHttpError(r.status, data);
+        return;
+      }
+
+      const reader = r.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let sep;
+        while ((sep = buf.indexOf("\n\n")) >= 0) {
+          const block = buf.slice(0, sep);
+          buf = buf.slice(sep + 2);
+          const msg = parseSseBlock(block);
+          if (!msg || !msg.t) continue;
+
+          if (msg.t === "meta") {
+            header = "$ " + msg.cmd.join(" ") + "\n\n--- 即時輸出 ---\n";
+            dlLog.textContent = header + output;
+          } else if (msg.t === "out") {
+            output += msg.s;
+            dlLog.textContent = header + output;
+            dlLog.scrollTop = dlLog.scrollHeight;
+          } else if (msg.t === "dl_stats") {
+            dlStats.hidden = false;
+            dlNewCount.textContent = msg.new;
+            dlTotalCount.textContent = msg.total;
+          } else if (msg.t === "done") {
+            const elapsed = Math.round((Date.now() - t0) / 1000);
+            dlLog.textContent += `\n--- 下載結束 ---\n總耗時約 ${elapsed} 秒\n`;
+            dlStatus.className = "dl-status";
+            dlStatus.textContent = "✅ 下載完成";
+          } else if (msg.t === "error") {
+            dlLog.textContent += `\n❌ 錯誤：${msg.msg}\n`;
+            dlStatus.className = "dl-status";
+            dlStatus.textContent = "❌ 下載失敗";
+          }
+        }
+      }
+    } catch (e) {
+      if (e.name === "AbortError") {
+        dlLog.textContent += "\n⏹️ 下載已被使用者停止。\n";
+        dlStatus.textContent = "⏹️ 已停止";
+      } else {
+        dlLog.textContent += `\n請求失敗：${e}\n`;
+        dlStatus.textContent = "❌ 連線失敗";
+      }
+    } finally {
+      clearInterval(timer);
+      dlRunBtn.disabled = false;
+      dlStopBtn.disabled = true;
+      dlStatus.className = "dl-status";
+    }
+  }
+
+  // ═══════════════════════════════════════════════════
+  // 啟動
+  // ═══════════════════════════════════════════════════
   loadMeta();
 })();

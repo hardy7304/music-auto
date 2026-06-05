@@ -114,11 +114,11 @@ You are on the music creation page in VOCAL / 有歌詞 mode (lyrics for singing
 1) Dismiss cookie banners, modals, or overlays that block inputs. Do NOT click Sign in, Try free now,
    Continue with Google, or any login/OAuth control.
 
-2) MODE: Ensure "Custom" (or "自定義") mode is selected among the tabs (Easy, Custom, Soundtrack).
+2) MODE: Ensure "Custom" (or "自定義" or "自訂") mode is selected among the tabs (Easy, Custom, Soundtrack).
    If not selected, click it first.
 
 {model_block}
-3) If there is a song title / project name field, set it from this JSON string (paste raw text only):
+3) If there is a song title / project name field (such as "Song title" or "歌名"), set it from this JSON string (paste raw text only):
 {title_j}
 4) Fill the main Lyrics / vocal prompt area (meant for singable lyrics) from this JSON — paste the
    full text as given, preserving line breaks:
@@ -149,12 +149,12 @@ You are on the music creation page in INSTRUMENTAL / 純音樂 mode (no singable
 1) Dismiss cookie banners, modals, or overlays that block inputs. Do NOT click Sign in, Try free now,
    Continue with Google, or any login/OAuth control.
 
-2) MODE: Ensure "Custom" (or "自定義") mode is selected among the tabs (Easy, Custom, Soundtrack).
+2) MODE: Ensure "Custom" (or "自定義" or "自訂") mode is selected among the tabs (Easy, Custom, Soundtrack).
    If not selected, click it first.
 
 {model_block}
 
-3) If there is a song title / project name field, set it from this JSON string (paste raw text only):
+3) If there is a song title / project name field (such as "Song title" or "歌名"), set it from this JSON string (paste raw text only):
 {title_j}
 
 4) CRITICAL — No vocal lyrics: Do NOT type, paste, or generate singable verse/chorus/stanza text into
@@ -198,7 +198,7 @@ def task_submit_generation_click() -> str:
 DRY_RUN=false: the music creation form is filled.
 
 Click the PRIMARY control that starts music generation (prefer labels like Generate, Generate Lyrics,
-Create song). If several exist, pick the one that clearly starts the full generation flow.
+Create song, 創作, or 生成). If several exist, pick the one that clearly starts the full generation flow.
 
 Do NOT click Sign in, Try free now, Continue with Google, or Log in.
 

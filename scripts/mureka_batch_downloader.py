@@ -7,7 +7,7 @@ from playwright.async_api import async_playwright
 
 # 設定
 TARGET_URL = "https://mureka.ai/create"
-DOWNLOAD_DIR = os.path.abspath("downloads")
+DOWNLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "downloads"))
 HISTORY_FILE = os.path.abspath("download_history.txt")
 CDP_URL = "http://127.0.0.1:9222"
 

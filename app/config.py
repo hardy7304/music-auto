@@ -123,6 +123,21 @@ class AppSettings:
     chrome_exe_path: str
     chrome_user_data_dir: str
     google_sheet_url: str
+    download_dir: str
+    download_max_parallel: int
+    download_retry_count: int
+    auto_download_after_generate: bool
+    download_profile: str
+    download_commercial_license: bool
+    download_wav: bool
+    download_stems_midi: bool
+    download_video: bool
+    download_max_file_size_mb: int
+    nas_sync_path: str | None
+    r2_account_id: str | None
+    r2_access_key_id: str | None
+    r2_secret_access_key: str | None
+    r2_bucket_name: str | None
 
 
 def google_api_key_for_browser_llm(settings: AppSettings) -> str:
@@ -271,6 +286,25 @@ def load_settings(*, env_path: str | None = None) -> AppSettings:
 
     google_sheet_url = os.getenv("GOOGLE_SHEET_URL", "").strip()
 
+    download_dir = os.getenv("DOWNLOAD_DIR", "../downloads").strip()
+    download_max_parallel = max(1, min(10, int(os.getenv("DOWNLOAD_MAX_PARALLEL", "3") or "3")))
+    download_retry_count = max(0, min(5, int(os.getenv("DOWNLOAD_RETRY_COUNT", "3") or "3")))
+    auto_download_after_generate = _bool_env(os.getenv("AUTO_DOWNLOAD_AFTER_GENERATE"), default=False)
+
+    _dp = (os.getenv("DOWNLOAD_PROFILE", "basic") or "basic").strip().lower()
+    download_profile = _dp if _dp in ("basic", "archive", "full", "video", "custom") else "basic"
+    download_commercial_license = _bool_env(os.getenv("DOWNLOAD_COMMERCIAL_LICENSE"), default=True)
+    download_wav = _bool_env(os.getenv("DOWNLOAD_WAV"), default=False)
+    download_stems_midi = _bool_env(os.getenv("DOWNLOAD_STEMS_MIDI"), default=False)
+    download_video = _bool_env(os.getenv("DOWNLOAD_VIDEO"), default=False)
+    download_max_file_size_mb = int(os.getenv("DOWNLOAD_MAX_FILE_SIZE_MB", "300") or "300")
+
+    nas_sync_path = os.getenv("NAS_SYNC_PATH", "").strip() or None
+    r2_account_id = os.getenv("R2_ACCOUNT_ID", "").strip() or None
+    r2_access_key_id = os.getenv("R2_ACCESS_KEY_ID", "").strip() or None
+    r2_secret_access_key = os.getenv("R2_SECRET_ACCESS_KEY", "").strip() or None
+    r2_bucket_name = os.getenv("R2_BUCKET_NAME", "").strip() or None
+
     return AppSettings(
         llm_provider=llm_provider,
         gemini_api_key=gemini,
@@ -312,5 +346,20 @@ def load_settings(*, env_path: str | None = None) -> AppSettings:
         auto_launch_chrome=auto_launch_chrome,
         chrome_exe_path=chrome_exe_path,
         chrome_user_data_dir=chrome_user_data_dir,
-        google_sheet_url=google_sheet_url
+        google_sheet_url=google_sheet_url,
+        download_dir=download_dir,
+        download_max_parallel=download_max_parallel,
+        download_retry_count=download_retry_count,
+        auto_download_after_generate=auto_download_after_generate,
+        download_profile=download_profile,
+        download_commercial_license=download_commercial_license,
+        download_wav=download_wav,
+        download_stems_midi=download_stems_midi,
+        download_video=download_video,
+        download_max_file_size_mb=download_max_file_size_mb,
+        nas_sync_path=nas_sync_path,
+        r2_account_id=r2_account_id,
+        r2_access_key_id=r2_access_key_id,
+        r2_secret_access_key=r2_secret_access_key,
+        r2_bucket_name=r2_bucket_name,
     )

@@ -26,9 +26,10 @@ MAIN_SCRIPT = PROJECT_ROOT / "app" / "main.py"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from app.logger import reconfigure_stdio_utf8
+from app.logger import get_logger, reconfigure_stdio_utf8
 
 reconfigure_stdio_utf8()
+logger = get_logger(__name__)
 
 APP_VERSION = "0.6.0"
 
@@ -41,7 +42,7 @@ _child_proc: asyncio.subprocess.Process | None = None
 class RunRequest(BaseModel):
     """僅允許預設流程，避免任意指令注入。"""
 
-    preset: Literal["from_notion", "from_sheet", "manual", "process_csv", "generate_batch"]
+    preset: Literal["from_notion", "from_sheet", "manual", "process_csv", "generate_batch", "download_library"]
     dry_run: bool | None = Field(
         default=None,
         description="覆寫 DRY_RUN：True=不點 Generate；False=會點；None=沿用 .env",
@@ -136,6 +137,12 @@ def _build_command(req: RunRequest) -> list[str]:
             cmd.extend(["--mode", req.song_mode])
         return cmd
 
+    if req.preset == "download_library":
+        cmd = [sys.executable, str(MAIN_SCRIPT), "--attach-open-page", "--download-from-library"]
+        if req.dry_run is not None:
+            cmd.extend(["--dry-run", "true" if req.dry_run else "false"])
+        return cmd
+
     if req.preset == "generate_batch":
         cmd = [sys.executable, str(PROJECT_ROOT / "generate_songs.py")]
         if req.theme:
@@ -176,6 +183,14 @@ def _build_command_unbuffered(req: RunRequest) -> list[str]:
     base = _build_command(req)
     # python -u ...
     return [base[0], "-u", *base[1:]]
+
+
+async def _collect_results(gen: AsyncIterator[str]) -> list[str]:
+    """Collect all items from an async generator into a list."""
+    results = []
+    async for item in gen:
+        results.append(item)
+    return results
 
 
 def _sse_data(obj: dict) -> str:
@@ -304,6 +319,135 @@ async def api_run_stop() -> dict[str, bool | str]:
     except ProcessLookupError:
         pass
     return {"stopped": True, "message": "已送出終止信號（Chrome 內自動化可能仍須數秒才停下）"}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 下載中心獨立端點（內部直接呼叫 MurekaDownloader，不走 main.py CLI）
+# ═══════════════════════════════════════════════════════════════
+
+_dl_lock = asyncio.Lock()
+_dl_busy = False
+_dl_task: asyncio.Task | None = None
+
+
+class DlRunRequest(BaseModel):
+    library_url: str | None = Field(
+        default=None,
+        description="可選：覆寫 Mureka 作品庫頁面 URL",
+    )
+    profile: str | None = Field(
+        default=None,
+        description="下載模式：basic, archive, full, video, custom",
+    )
+
+
+@app.post("/api/download/stream")
+async def api_download_stream(req: DlRunRequest) -> StreamingResponse:
+    """獨立下載 SSE 串流：使用 asyncio.Queue 實現即時進度回報。"""
+    from app.services.mureka_downloader import MurekaDownloader
+    from app.config import load_settings
+
+    async def _stream():
+        global _dl_busy, _dl_task
+
+        async with _dl_lock:
+            if _dl_busy:
+                yield _sse_data({"t": "error", "msg": "下載已在進行中，請稍候或按停止。"})
+                yield _sse_data({"t": "done", "code": 409})
+                return
+            _dl_busy = True
+
+        settings = load_settings()
+        downloader = MurekaDownloader(settings, profile=req.profile)
+        queue: asyncio.Queue[dict] = asyncio.Queue()
+
+        async def progress(msg: dict):
+            await queue.put(msg)
+
+        async def run_download():
+            try:
+                yield _sse_data({"t": "meta", "cmd": ["MurekaDownloader.download_from_library"]})
+                yield _sse_data({"t": "out", "s": "正在連接 Chrome CDP...\n"})
+
+                await downloader.connect()
+
+                yield _sse_data({"t": "out", "s": "✅ 已連接。開始掃描作品庫...\n"})
+                yield _sse_data({"t": "out", "s": f"下載目錄：{downloader._download_dir}\n"})
+                yield _sse_data({"t": "out", "s": f"歷史記錄：{len(downloader._history)} 筆\n\n"})
+
+                results, new_count = await downloader.download_from_library(
+                    library_url=req.library_url,
+                    progress_callback=progress,
+                )
+
+                yield _sse_data({"t": "out", "s": f"\n--- 下載完成 ---\n"})
+                yield _sse_data({"t": "out", "s": f"新下載：{new_count} 首\n"})
+                yield _sse_data({"t": "out", "s": f"總處理：{len(results)} 首\n"})
+                yield _sse_data({"t": "dl_stats", "new": new_count, "total": len(results)})
+                yield _sse_data({"t": "done", "code": 0})
+
+            except Exception as exc:
+                logger.exception("Download stream failed")
+                yield _sse_data({"t": "error", "msg": str(exc)})
+                yield _sse_data({"t": "done", "code": 1})
+            finally:
+                await downloader.close()
+                async with _dl_lock:
+                    _dl_busy = False
+                    _dl_task = None
+
+        global _dl_task
+        # 背景執行下載，同時從 queue 讀取進度
+        _dl_task = asyncio.ensure_future(_collect_results(run_download()))
+        download_task = _dl_task
+
+        # 先送出 meta
+        yield _sse_data({"t": "meta", "cmd": ["MurekaDownloader.download_from_library"]})
+
+        while not download_task.done() or not queue.empty():
+            try:
+                msg = await asyncio.wait_for(queue.get(), timeout=0.5)
+                yield _sse_data(msg)
+            except asyncio.TimeoutError:
+                if download_task.done():
+                    # drain remaining
+                    while not queue.empty():
+                        msg = queue.get_nowait()
+                        yield _sse_data(msg)
+                    break
+
+        # 送出下載器產生的最終結果
+        final_results = await download_task
+        for item in final_results:
+            yield item
+
+    return StreamingResponse(
+        _stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.post("/api/download/stop")
+async def api_download_stop() -> dict[str, bool | str]:
+    """停止正在進行的下載（目前僅標記，待下一輪 idle 檢測退出）。"""
+    global _dl_busy, _dl_task
+    async with _dl_lock:
+        if not _dl_busy:
+            return {"stopped": False, "message": "目前沒有執行中的下載"}
+        
+        # Cancel the task if it exists
+        if _dl_task and not _dl_task.done():
+            _dl_task.cancel()
+            
+        _dl_busy = False
+        _dl_task = None
+        
+    return {"stopped": True, "message": "已送出停止信號，下載任務已取消。"}
 
 
 @app.post("/api/run", response_model=RunResponse)

@@ -1,193 +1,202 @@
 :root {
-    --primary-accent: #FFFFFF;
     --brand-gold: #D4AF37;
-    --dark-bg: #050505;
-    --card-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.08);
+    --brand-black: #0A0A0A;
     --text-main: #FFFFFF;
-    --text-dim: rgba(255, 255, 255, 0.4);
-    --active-glow: rgba(212, 175, 55, 0.3);
+    --text-dim: #A0A0A0;
+    --glass-bg: rgba(20, 20, 20, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.08);
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-box: border-box; }
 
 body {
-    background: var(--dark-bg);
-    color: var(--text-main);
     font-family: 'Outfit', 'Noto Sans TC', sans-serif;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    background-color: var(--brand-black);
+    color: var(--text-main);
     overflow: hidden;
+    height: 100vh;
 }
 
 .glass-bg {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at 50% -20%, #222, #000);
     z-index: -1;
 }
 
 .container {
-    width: 100%;
-    max-width: 1200px;
-    height: 90vh;
-    background: rgba(10, 10, 10, 0.7);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    border: 1px solid var(--glass-border);
+    max-width: 1400px;
+    margin: 0 auto;
     padding: 30px;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 40px 100px rgba(0,0,0,0.5);
-    border-radius: 4px;
 }
 
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
-    border-bottom: 1px solid var(--glass-border);
-    padding-bottom: 15px;
-    flex-shrink: 0;
+    margin-bottom: 30px;
 }
 
-.logo h1 { font-size: 14px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; }
-.header-tag { font-size: 10px; letter-spacing: 2px; color: var(--text-dim); }
+.logo { display: flex; align-items: center; gap: 12px; }
+.brand-icon { width: 32px; height: 32px; background: var(--brand-gold); border-radius: 6px; }
+.logo h1 { font-size: 20px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+.header-tag { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
 
 main {
     display: grid;
-    grid-template-columns: 1fr 1.2fr;
-    gap: 40px;
+    grid-template-columns: 1fr 1fr 0.8fr;
+    gap: 30px;
     flex: 1;
     min-height: 0;
 }
 
-.player-section { display: flex; flex-direction: column; height: 100%; }
-
-.album-cover {
-    width: 100%;
-    aspect-ratio: 1/1;
-    max-height: 320px;
-    border-radius: 4px;
-    background-size: cover;
-    background-position: center;
-    margin-bottom: 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.7);
-}
-
-.song-info { margin-bottom: 20px; }
-.song-info h2 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
-
-.producer-info {
-    font-size: 11px;
-    letter-spacing: 1.5px;
-    color: var(--text-dim);
-    margin-bottom: 6px;
-    text-transform: uppercase;
-}
-
-.gold-text { color: var(--brand-gold); font-weight: 700; }
-.sub-text { font-size: 10px; margin-left: 8px; opacity: 0.8; font-weight: 400; }
-
-.engine-info {
-    font-size: 8px;
-    letter-spacing: 3px;
-    color: rgba(255,255,255,0.2);
-    text-transform: uppercase;
-}
-
-.lyrics-section {
+.player-section, .lyrics-section, .playlist-section {
+    min-width: 0;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    height: 100%;
-    position: relative;
     overflow: hidden;
 }
 
-.lyrics-wrapper {
-    flex: 1;
-    overflow-y: auto;
-    scroll-behavior: smooth;
-    padding: 35vh 0;
-    mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
-    -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+.player-section { border-right: 1px solid var(--glass-border); padding-right: 20px; }
+.lyrics-section { border-right: 1px solid var(--glass-border); padding-right: 20px; }
+
+.album-cover {
+    width: 100%;
+    max-width: 320px;
+    aspect-ratio: 1/1;
+    border-radius: 4px;
+    background-color: #111;
+    background-size: cover;
+    background-position: center;
+    margin: 0 auto 15px auto;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+    border: 1px solid var(--glass-border);
 }
 
-.lyrics-wrapper::-webkit-scrollbar { display: none; }
+.song-info { margin-bottom: 15px; text-align: center; }
+.song-info h2 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+.producer-info { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+.gold-text { color: var(--brand-gold); font-weight: 700; }
+.engine-info { font-size: 9px; color: var(--brand-gold); opacity: 0.6; }
 
-.lyric-line {
-    font-size: 19px;
-    font-weight: 500;
-    color: var(--text-dim);
-    padding: 15px 0;
-    transition: all 0.4s ease;
-    line-height: 1.4;
-}
+.player-controls { margin-top: auto; padding-bottom: 10px; }
 
-.lyric-line.active {
-    color: #fff;
-    font-size: 26px;
-    font-weight: 700;
-    text-shadow: 0 0 20px rgba(255,255,255,0.4);
-}
-
+/* 進度條容器 */
 .progress-container {
     display: flex;
     align-items: center;
     gap: 15px;
-    margin-bottom: 15px;
-    font-size: 10px;
-    color: var(--text-dim);
+    margin-bottom: 25px;
 }
 
-.progress-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; }
-.progress-fill { width: 0%; height: 100%; background: var(--brand-gold); border-radius: 3px; }
+.progress-container span { font-size: 12px; color: var(--text-dim); width: 40px; }
+
+/* 原生 Range Slider 美化 */
+.seek-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    background-image: linear-gradient(var(--brand-gold), var(--brand-gold));
+    background-repeat: no-repeat;
+    background-size: var(--progress, 0%) 100%;
+}
+
+.seek-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.buttons { display: flex; justify-content: center; align-items: center; gap: 30px; }
 
 .play-btn {
-    width: 60px; height: 60px;
+    width: 65px; height: 65px;
     background: #fff; color: #000;
     border-radius: 50%;
     display: flex; justify-content: center; align-items: center;
-    font-size: 22px; cursor: pointer;
-    margin: 0 auto;
+    font-size: 24px; cursor: pointer; border: none;
+    transition: transform 0.2s;
+}
+.play-btn:hover { transform: scale(1.05); }
+
+.ctrl-btn {
+    background: transparent; border: none; color: var(--text-dim);
+    font-size: 20px; cursor: pointer; transition: color 0.2s;
+}
+.ctrl-btn:hover { color: #fff; }
+
+.section-header { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+.section-header h3 { font-size: 12px; color: var(--text-dim); letter-spacing: 2px; }
+.count-tag { font-size: 10px; background: rgba(212, 175, 55, 0.1); color: var(--brand-gold); padding: 2px 6px; border-radius: 2px; }
+
+.playlist-wrapper { flex: 1; overflow-y: scroll; padding-right: 10px; min-height: 0; }
+.playlist-wrapper::-webkit-scrollbar { width: 4px; }
+.playlist-wrapper::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 2px; }
+
+.playlist-item {
+    display: flex; align-items: center; padding: 12px; border-radius: 4px;
+    margin-bottom: 4px; cursor: pointer; transition: background 0.2s;
+}
+.playlist-item:hover { background: rgba(255,255,255,0.05); }
+.playlist-item.active { background: rgba(212, 175, 55, 0.1); border-left: 2px solid var(--brand-gold); }
+
+.item-index { font-size: 10px; color: var(--text-dim); margin-right: 15px; width: 20px; }
+.item-info { flex: 1; overflow: hidden; }
+.item-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-meta { font-size: 10px; display: flex; gap: 8px; align-items: center; }
+.genre-tag { color: var(--brand-gold); background: rgba(212, 175, 55, 0.1); padding: 1px 6px; border-radius: 2px; text-transform: uppercase; font-weight: 600; }
+
+.lyrics-wrapper { flex: 1; overflow-y: auto; text-align: center; padding: 20px 0; }
+.lyric-line { font-size: 16px; color: var(--text-dim); margin-bottom: 20px; transition: color 0.3s; }
+
+/* 下載按鈕區域 */
+.download-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 18px;
+    gap: 6px;
 }
 
-/* 【手機版優化】 */
-@media (max-width: 768px) {
-    body { padding: 0; }
-    .container {
-        height: 100vh; width: 100vw; max-width: none;
-        border: none; border-radius: 0;
-        padding: 20px 20px 40px 20px; /* 增加底部間距避免按鈕擠壓 */
-    }
-    
-    header { border-bottom: none; margin-bottom: 5px; }
-    header h1 { font-size: 12px; }
-    .header-tag { display: none; }
-    
-    main { grid-template-columns: 1fr; gap: 5px; }
-    
-    .album-cover { max-height: 220px; margin-bottom: 10px; }
-    
-    .song-info { text-align: center; margin-bottom: 15px; }
-    .song-info h2 { font-size: 20px; }
-    
-    .producer-info { font-size: 9px; line-height: 1.5; }
-    .sub-text { display: block; margin-left: 0; margin-top: 1px; }
-    
-    .lyrics-wrapper { 
-        padding: 20vh 0; /* 縮小手機版 padding 讓捲動空間更大 */
-        mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
-        -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
-    }
-    
-    .lyric-line { font-size: 15px; padding: 10px 0; text-align: center; }
-    .lyric-line.active { font-size: 19px; }
+.download-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(212, 175, 55, 0.12);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    color: var(--brand-gold);
+    padding: 8px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+}
+
+.download-btn:hover {
+    background: rgba(212, 175, 55, 0.25);
+    border-color: var(--brand-gold);
+    color: #fff;
+}
+
+.download-btn i {
+    font-size: 14px;
+}
+
+.download-hint {
+    font-size: 10px;
+    color: var(--text-dim);
+    opacity: 0.7;
 }

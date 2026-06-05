@@ -159,6 +159,35 @@ def _parse_args() -> argparse.Namespace:
         metavar="BOOL",
         help="Playwright 失敗時是否改用 browser-use（會消耗 LLM token）",
     )
+    parser.add_argument(
+        "--download-from-library",
+        action="store_true",
+        help="從 Mureka「我的作品」頁面批量下載 MP3（不需生成，純下載模式）",
+    )
+    parser.add_argument(
+        "--auto-download",
+        action="store_true",
+        help="生成歌曲後自動下載 MP3 到 downloads/ 目錄（需搭配 --from-notion / --from-sheet / 手動模式）",
+    )
+    parser.add_argument(
+        "--library-url",
+        type=str,
+        default=None,
+        help="覆寫 Mureka 作品庫頁面 URL（預設使用 MUREKA_BASE_URL + /library）",
+    )
+    parser.add_argument(
+        "--download-profile",
+        type=str,
+        default=None,
+        choices=["basic", "archive", "full", "video", "custom"],
+        help="下載模式：basic=mp3+license, archive=mp3+wav+license, full=mp3+wav+stems+license, video=mp3+video+license, custom=自訂（需搭配 --download-assets）",
+    )
+    parser.add_argument(
+        "--download-assets",
+        type=str,
+        default=None,
+        help="自訂下載資產列表（逗號分隔）：mp3,wav,license,stems_midi,video。僅 --download-profile custom 時使用",
+    )
     return parser.parse_args()
 
 
@@ -462,6 +491,43 @@ async def _async_main() -> int:
 
     if not await _preflight_cdp(settings):
         return 2
+
+    # ---- pure download mode (no generation) ----
+    if args.download_from_library:
+        from app.services.mureka_downloader import MurekaDownloader
+
+        profile = args.download_profile or settings.download_profile
+        custom_assets = args.download_assets if profile == "custom" else None
+        downloader = MurekaDownloader(
+            settings,
+            profile=profile,
+            custom_assets=custom_assets,
+        )
+        try:
+            await downloader.connect()
+            results, new_count = await downloader.download_from_library(
+                library_url=args.library_url,
+            )
+            summary = [
+                {
+                    "title": r.title,
+                    "song_id": r.song_id,
+                    "success": r.success,
+                    "assets_downloaded": r.assets_downloaded,
+                    "assets_failed": r.assets_failed,
+                    "folder": r.folder,
+                    "error": r.error,
+                }
+                for r in results
+            ]
+            print(json.dumps(summary, ensure_ascii=False, indent=2))
+            logger.info("Download complete: %s new / %s total", new_count, len(results))
+            return 0
+        except Exception as exc:
+            logger.exception("Library download failed: %s", exc)
+            return 1
+        finally:
+            await downloader.close()
 
     if args.from_notion:
         try:

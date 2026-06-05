@@ -54,3 +54,7 @@ class SongResult(BaseModel):
     used_profile_path: str | None = None
     login_reused: bool = False
     notion_page_id: str | None = None
+    download_path: str | None = Field(
+        default=None,
+        description="Local file path when auto-download is enabled and successful",
+    )

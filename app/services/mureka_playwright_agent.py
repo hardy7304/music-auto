@@ -299,14 +299,16 @@ class MurekaPlaywrightAgent:
         # 先檢查是否已經在 Custom
         is_custom = await self._page.evaluate("""() => {
             const el = document.querySelector('.create-mode-tab-switch-item--active');
-            return el ? el.innerText.trim().includes('Custom') : false;
+            if (!el) return false;
+            const txt = el.innerText.trim();
+            return txt.includes('Custom') || txt.includes('自訂') || txt.includes('自定義');
         }""")
         if is_custom:
             logger.info("Already on Custom tab, skipping switch")
             return
 
         # 使用精確的 Mureka class selector（已驗證有效）
-        loc = self._page.locator('.create-mode-tab-switch-item:has-text("Custom")').first
+        loc = self._page.locator('.create-mode-tab-switch-item:has-text("Custom"), .create-mode-tab-switch-item:has-text("自訂"), .create-mode-tab-switch-item:has-text("自定義")').first
         try:
             if await loc.count() > 0 and await loc.is_visible():
                 await loc.click(timeout=2000)
@@ -317,7 +319,7 @@ class MurekaPlaywrightAgent:
             logger.debug("Custom tab click via class failed: %s", exc)
 
         # Fallback: 文字匹配
-        for pattern in (r"Custom", r"自定義"):
+        for pattern in (r"Custom", r"自訂", r"自定義"):
             if await self._click_text_if_visible(pattern):
                 logger.info("Playwright switched to Custom tab via text: %s", pattern)
                 await asyncio.sleep(1.5)
@@ -374,8 +376,8 @@ class MurekaPlaywrightAgent:
             .filter((el) => visible(el) && !el.disabled && el.getAttribute('aria-disabled') !== 'true')
             .filter((el) => {
               const tag = el.tagName.toLowerCase();
-              const type = norm(el.getAttribute('type') or 'text');
-              const placeholder = norm(el.getAttribute('placeholder') or '');
+              const type = norm(el.getAttribute('type') || 'text');
+              const placeholder = norm(el.getAttribute('placeholder') || '');
               
               // Exclude search-related fields
               if (placeholder.includes('search') || placeholder.includes('搜尋')) return false;
@@ -490,15 +492,24 @@ class MurekaPlaywrightAgent:
         logger.info("Style filled (%d chars)", len(song_input.style_tags))
 
         # ── 3. Song title (input, placeholder='Song title') ──
-        #    CRITICAL: 不能填到右上角的搜尋框 (placeholder='Enter song title')
-        #    真正的歌名欄位 placeholder 是 'Song title'（不含 Enter）
+        #    CRITICAL: 不能填到右上角的搜尋框 (placeholder='Enter song title' / '輸入歌名')
+        #    真正的歌名欄位 placeholder 是 'Song title'（不含 Enter）或 '歌名'
         title_ok = await self._fill_field_direct(
             'input[placeholder="Song title"]', song_input.song_title
         )
         if not title_ok:
-            # 備選：找到所有 placeholder 含 title 的 input，排除搜尋框
+            title_ok = await self._fill_field_direct(
+                'input[placeholder="歌名"]', song_input.song_title
+            )
+        if not title_ok:
+            # 備選：找到所有 placeholder 含 title 或 歌名 的 input，排除搜尋框
             title_ok = await self._fill_field_direct(
                 'input[placeholder*="title" i]:not([placeholder*="Enter song" i])',
+                song_input.song_title,
+            )
+        if not title_ok:
+            title_ok = await self._fill_field_direct(
+                'input[placeholder*="歌名" i]:not([placeholder*="輸入" i])',
                 song_input.song_title,
             )
         if not title_ok:
@@ -509,7 +520,7 @@ class MurekaPlaywrightAgent:
                     const r = el.getBoundingClientRect();
                     const ph = (el.placeholder || '').toLowerCase();
                     // 排除搜尋框（y < 100 的都是頂部搜尋欄）
-                    return r.y > 100 && r.width > 50 && ph.includes('title');
+                    return r.y > 100 && r.width > 50 && (ph.includes('title') || ph.includes('歌名') || ph.includes('song'));
                 });
                 if (candidates.length === 0) return false;
                 const el = candidates[0];
@@ -539,7 +550,7 @@ class MurekaPlaywrightAgent:
         # Mureka 2026-05: 底部有一個 <button class="el-button"> 寫著 "Create"
         # 表單未填完時它是 disabled (class 含 is-disabled)
         # 等待它啟用（最多 5 秒）
-        create_btn = self._page.locator('button.el-button:has-text("Create"), button.el-button:has-text("Generate"), button.el-button:has-text("生成")')
+        create_btn = self._page.locator('button.el-button:has-text("Create"), button.el-button:has-text("Generate"), button.el-button:has-text("生成"), button.el-button:has-text("創作")')
         try:
             await create_btn.first.wait_for(state="visible", timeout=5000)
         except Exception:
@@ -560,7 +571,7 @@ class MurekaPlaywrightAgent:
             await asyncio.sleep(0.5)
 
         # 備選方案：找頁面上任何可見且啟用的 Create/Generate 文字
-        for pattern in (r"Create", r"Generate", r"生成"):
+        for pattern in (r"Create", r"Generate", r"生成", r"創作"):
             try:
                 btn = self._page.get_by_role("button", name=re.compile(pattern, re.I)).last
                 if await btn.count() > 0 and await btn.is_visible() and await btn.is_enabled():

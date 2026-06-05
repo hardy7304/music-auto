@@ -385,3 +385,58 @@ button {
 body.is-running .cta-spinner {
   display: block;
 }
+
+/* ── 左欄（控制面板 + 下載中心） ── */
+.left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ── 下載中心（獨立面板） ── */
+.download-center {
+  border-left: 3px solid var(--accent-gold);
+}
+
+.dl-actions {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.dl-cta {
+  flex: 2;
+}
+
+.dl-status {
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.dl-status.running {
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--accent-gold);
+  border: 1px solid var(--accent-gold);
+}
+
+.dl-stats {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.6rem 0;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.dl-stats strong {
+  color: var(--accent-gold);
+  font-size: 1.1rem;
+}
+
+.dl-log {
+  height: 350px;
+  margin-top: 0.5rem;
+}
