@@ -13,8 +13,8 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -309,7 +309,29 @@ async def get_stats():
             local_count = len(data)
         except Exception:
             pass
-    return {"local": local_count, "r2": local_count}
+            
+    r2_count = 0
+    try:
+        from app.config import load_settings
+        from app.services.storage_manager import StorageManager
+        settings = load_settings()
+        sm = StorageManager(settings)
+        if sm._r2_client and settings.r2_bucket_name:
+            # List objects with prefix if we want folders, but for now we count top-level metadata.json or we count how many songs
+            # Since r2 category path is like YYYY-MM/Author/Folder_name, let's just count metadata.json files
+            # Actually, D1 database gives us exactly how many songs we have! But if we want R2 actual folder count:
+            # Let's count the number of metadata.json files in R2 which represents a song folder
+            paginator = sm._r2_client.get_paginator('list_objects_v2')
+            pages = paginator.paginate(Bucket=settings.r2_bucket_name)
+            for page in pages:
+                if 'Contents' in page:
+                    for obj in page['Contents']:
+                        if obj['Key'].endswith('metadata.json'):
+                            r2_count += 1
+    except Exception:
+        r2_count = local_count # fallback if fails
+
+    return {"local": local_count, "r2": r2_count}
 
 
 @app.get("/api/meta")
@@ -354,6 +376,8 @@ async def api_songs(limit: int = 50, offset: int = 0, genre: str | None = None) 
             category_key = song["r2_category_path"].replace("\\", "/")
             s3_key = f"{category_key}/{filename}"
             try:
+                # 1. 產 R2 presigned URL 前，先用 boto3 head_object 確認物件存在
+                sm._r2_client.head_object(Bucket=settings.r2_bucket_name, Key=s3_key)
                 r2_url = sm._r2_client.generate_presigned_url(
                     'get_object',
                     Params={
@@ -401,8 +425,7 @@ async def api_song_play(song_id: str):
     if not d1.enabled:
         raise HTTPException(status_code=404, detail="D1 is not enabled")
         
-    songs = await d1.get_recent_songs(limit=500) # Fetch more to find the ID
-    song = next((s for s in songs if s["song_id"] == song_id), None)
+    song = await d1.get_song_by_id(song_id)
     
     if not song or not song.get("folder_name"):
         raise HTTPException(status_code=404, detail="Song not found in database")

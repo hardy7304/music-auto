@@ -127,6 +127,22 @@ class D1Manager:
             logger.error("Failed to fetch recent songs: %s", e)
             return []
 
+    async def get_song_by_id(self, song_id: str) -> dict[str, Any] | None:
+        """Fetch a single song by ID."""
+        if not self.enabled:
+            return None
+            
+        sql = "SELECT * FROM mureka_songs WHERE song_id = ?"
+        try:
+            results = await self._execute_sql(sql, [song_id])
+            if results and isinstance(results, list) and len(results) > 0:
+                if "results" in results[0] and len(results[0]["results"]) > 0:
+                    return results[0]["results"][0]
+            return None
+        except Exception as e:
+            logger.error("Failed to fetch song %s: %s", song_id, e)
+            return None
+
     async def update_song_genre(self, song_id: str, genre: str) -> bool:
         """Update the genre of a specific song."""
         if not self.enabled:
