@@ -71,23 +71,63 @@ class StorageManager:
             return f"❌ NAS 備份失敗: {exc}"
 
     def _sync_to_r2_sync(self, source_folder: Path) -> str:
-        """Synchronously upload to R2."""
+        """Synchronously upload to R2 with idempotency and retries."""
         if not self._r2_client or not self._settings.r2_bucket_name:
             return ""
             
         bucket = self._settings.r2_bucket_name
+        import time
+        from botocore.exceptions import ClientError
+
         try:
             category_path = self._get_category_path(source_folder.name)
-            # Ensure S3 keys always use forward slashes
             category_key = category_path.replace("\\", "/")
+            uploaded_count = 0
+            skipped_count = 0
+
             for item in source_folder.iterdir():
-                if item.is_file():
-                    # Prefix with the category path
-                    s3_key = f"{category_key}/{item.name}"
-                    self._r2_client.upload_file(str(item), bucket, s3_key)
-                    
-            logger.info("Backed up %s to R2 Bucket: %s", source_folder.name, bucket)
-            return "✅ Cloudflare R2 備份完成"
+                if not item.is_file():
+                    continue
+
+                s3_key = f"{category_key}/{item.name}"
+                file_size = item.stat().st_size
+                
+                # HEAD verification
+                try:
+                    head = self._r2_client.head_object(Bucket=bucket, Key=s3_key)
+                    if head['ContentLength'] == file_size:
+                        skipped_count += 1
+                        logger.info("Skip existing R2 file: %s", s3_key)
+                        continue
+                except ClientError as e:
+                    if e.response['Error']['Code'] == '404':
+                        pass # File does not exist, proceed
+                    else:
+                        logger.warning("HEAD check failed for %s: %s", s3_key, e)
+
+                # Upload with retries
+                max_retries = 3
+                for attempt in range(max_retries):
+                    try:
+                        logger.info("Uploading %s (Attempt %d/%d)...", s3_key, attempt+1, max_retries)
+                        self._r2_client.upload_file(str(item), bucket, s3_key)
+                        
+                        # Post-upload verification
+                        head = self._r2_client.head_object(Bucket=bucket, Key=s3_key)
+                        if head['ContentLength'] == file_size:
+                            uploaded_count += 1
+                            logger.info("Successfully uploaded: %s", s3_key)
+                            break
+                        else:
+                            logger.warning("Upload size mismatch for %s", s3_key)
+                    except Exception as e:
+                        logger.warning("Upload attempt %d failed for %s: %s", attempt+1, s3_key, e)
+                        if attempt == max_retries - 1:
+                            raise
+                        time.sleep(2 ** attempt)
+
+            logger.info("R2 sync finished for %s: Uploaded %d, Skipped %d", source_folder.name, uploaded_count, skipped_count)
+            return f"✅ Cloudflare R2 備份完成 (上傳 {uploaded_count}，略過 {skipped_count})"
         except Exception as exc:
             logger.error("R2 backup failed for %s: %s", source_folder.name, exc)
             return f"❌ R2 備份失敗: {exc}"

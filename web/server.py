@@ -289,6 +289,29 @@ async def index() -> FileResponse:
     return FileResponse(index_path)
 
 
+@app.get("/library")
+async def library_page() -> FileResponse:
+    lib_path = STATIC_DIR / "library.html"
+    if not lib_path.is_file():
+        raise HTTPException(status_code=500, detail="static/library.html 缺失")
+    return FileResponse(lib_path)
+
+
+@app.get("/api/stats")
+async def get_stats():
+    # downloader uses (repo_root / ".." / "downloads" / "download_history.json").resolve()
+    # where repo_root is music-auto
+    history_file = (PROJECT_ROOT / ".." / "downloads" / "download_history.json").resolve()
+    local_count = 0
+    if history_file.exists():
+        try:
+            data = json.loads(history_file.read_text(encoding="utf-8"))
+            local_count = len(data)
+        except Exception:
+            pass
+    return {"local": local_count, "r2": local_count}
+
+
 @app.get("/api/meta")
 async def api_meta() -> dict:
     return {
@@ -303,6 +326,106 @@ async def api_meta() -> dict:
         "post_endpoints": ["/api/run", "/api/run/stream", "/api/run/stop"],
         "hint": "若 POST /api/run/stream 回 404，請關掉舊的 python -m web 後在 music-auto 目錄重啟。",
     }
+
+
+@app.get("/api/songs")
+async def api_songs(limit: int = 50, offset: int = 0, genre: str | None = None) -> list[dict]:
+    """從 D1 資料庫抓取最新下載的歌曲，並解析 R2 公開 URL 或本地串流路徑"""
+    from app.config import load_settings
+    from app.services.d1_manager import D1Manager
+    
+    settings = load_settings()
+    d1 = D1Manager(settings)
+    from app.services.storage_manager import StorageManager
+    sm = StorageManager(settings)
+    
+    if not d1.enabled:
+        return []
+    songs = await d1.get_recent_songs(limit=limit, offset=offset, genre=genre)
+    
+    # 優先提供 NAS 本地串流，因為 R2 可能尚未上傳完成
+    for song in songs:
+        song["fallback_url"] = f"/api/songs/{song['song_id']}/play"
+        r2_url = None
+        
+        # 使用 boto3 產生 presigned URL，這樣就不需要公開 Bucket (也就不需要 r2.dev)
+        if sm._r2_client and settings.r2_bucket_name and song.get("r2_category_path") and song.get("folder_name"):
+            filename = f"{song['folder_name']}.mp3"
+            category_key = song["r2_category_path"].replace("\\", "/")
+            s3_key = f"{category_key}/{filename}"
+            try:
+                r2_url = sm._r2_client.generate_presigned_url(
+                    'get_object',
+                    Params={
+                        'Bucket': settings.r2_bucket_name,
+                        'Key': s3_key
+                    },
+                    ExpiresIn=3600 * 24 # 網址 24 小時有效
+                )
+            except Exception:
+                pass
+            
+        song["audio_url"] = r2_url if r2_url else song["fallback_url"]
+        
+        # Ensure genre is at least returned (fallback to Uncategorized if None)
+        if "genre" not in song or not song["genre"]:
+            song["genre"] = "Uncategorized"
+            
+    return songs
+
+class GenreUpdateRequest(BaseModel):
+    genre: str
+
+@app.put("/api/songs/{song_id}/genre")
+async def api_update_song_genre(song_id: str, req: GenreUpdateRequest):
+    from app.config import load_settings
+    from app.services.d1_manager import D1Manager
+    settings = load_settings()
+    d1 = D1Manager(settings)
+    success = await d1.update_song_genre(song_id, req.genre)
+    if not success:
+        return JSONResponse({"error": "Failed to update genre"}, status_code=500)
+    return {"status": "success", "genre": req.genre}
+
+
+@app.get("/api/songs/{song_id}/play")
+async def api_song_play(song_id: str):
+    """取得歌曲的 MP3 音訊串流"""
+    from app.config import load_settings
+    from app.services.d1_manager import D1Manager
+    from fastapi.responses import FileResponse
+    import glob
+    
+    settings = load_settings()
+    d1 = D1Manager(settings)
+    if not d1.enabled:
+        raise HTTPException(status_code=404, detail="D1 is not enabled")
+        
+    songs = await d1.get_recent_songs(limit=500) # Fetch more to find the ID
+    song = next((s for s in songs if s["song_id"] == song_id), None)
+    
+    if not song or not song.get("folder_name"):
+        raise HTTPException(status_code=404, detail="Song not found in database")
+        
+    # 如果有 R2 設定，也可以在此將請求 redirect 到 R2（選項）
+    # 但為了相容性，這裡保持返回本地檔案，若本地找不到則報錯
+    folder_path = Path(settings.download_dir) / song["folder_name"]
+    mp3_files = list(folder_path.glob("*.mp3")) if folder_path.exists() else []
+    
+    if not mp3_files:
+        # Fallback to predicting filename if it's there but glob fails? No, if it doesn't exist locally, we can't serve it.
+        # Check if we can redirect to R2
+        if settings.r2_bucket_name and settings.r2_public_url and song.get("r2_category_path"):
+            from fastapi.responses import RedirectResponse
+            import urllib.parse
+            filename = urllib.parse.quote(f"{song['folder_name']}.mp3")
+            category_key = urllib.parse.quote(song["r2_category_path"].replace("\\", "/"), safe="/")
+            r2_url = f"{settings.r2_public_url.rstrip('/')}/{category_key}/{filename}"
+            return RedirectResponse(url=r2_url)
+            
+        raise HTTPException(status_code=404, detail="MP3 file not found in directory")
+        
+    return FileResponse(path=mp3_files[0], media_type="audio/mpeg")
 
 
 @app.post("/api/run/stop")
@@ -372,6 +495,7 @@ async def api_download_stream(req: DlRunRequest) -> StreamingResponse:
                 await downloader.connect()
 
                 yield _sse_data({"t": "out", "s": "✅ 已連接。開始掃描作品庫...\n"})
+                yield _sse_data({"t": "dash_stats", "local": len(downloader._history), "r2": len(downloader._history)})
                 yield _sse_data({"t": "out", "s": f"下載目錄：{downloader._download_dir}\n"})
                 yield _sse_data({"t": "out", "s": f"歷史記錄：{len(downloader._history)} 筆\n\n"})
 

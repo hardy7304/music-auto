@@ -138,6 +138,10 @@ class AppSettings:
     r2_access_key_id: str | None
     r2_secret_access_key: str | None
     r2_bucket_name: str | None
+    cloudflare_account_id: str | None
+    cloudflare_api_token: str | None
+    cloudflare_d1_database_id: str | None
+    r2_public_url: str | None
 
 
 def google_api_key_for_browser_llm(settings: AppSettings) -> str:
@@ -300,10 +304,13 @@ def load_settings(*, env_path: str | None = None) -> AppSettings:
     download_max_file_size_mb = int(os.getenv("DOWNLOAD_MAX_FILE_SIZE_MB", "300") or "300")
 
     nas_sync_path = os.getenv("NAS_SYNC_PATH", "").strip() or None
-    r2_account_id = os.getenv("R2_ACCOUNT_ID", "").strip() or None
-    r2_access_key_id = os.getenv("R2_ACCESS_KEY_ID", "").strip() or None
-    r2_secret_access_key = os.getenv("R2_SECRET_ACCESS_KEY", "").strip() or None
-    r2_bucket_name = os.getenv("R2_BUCKET_NAME", "").strip() or None
+    r2_account_id = _strip_opt(os.getenv("R2_ACCOUNT_ID"))
+    r2_access_key_id = _strip_opt(os.getenv("R2_ACCESS_KEY_ID"))
+    r2_secret_access_key = _strip_opt(os.getenv("R2_SECRET_ACCESS_KEY"))
+    r2_bucket_name = _strip_opt(os.getenv("R2_BUCKET_NAME"))
+    cloudflare_account_id = _strip_opt(os.getenv("CLOUDFLARE_ACCOUNT_ID"))
+    cloudflare_api_token = _strip_opt(os.getenv("CLOUDFLARE_API_TOKEN"))
+    cloudflare_d1_database_id = _strip_opt(os.getenv("CLOUDFLARE_D1_DATABASE_ID"))
 
     return AppSettings(
         llm_provider=llm_provider,
@@ -362,4 +369,8 @@ def load_settings(*, env_path: str | None = None) -> AppSettings:
         r2_access_key_id=r2_access_key_id,
         r2_secret_access_key=r2_secret_access_key,
         r2_bucket_name=r2_bucket_name,
+        cloudflare_account_id=cloudflare_account_id,
+        cloudflare_api_token=cloudflare_api_token,
+        cloudflare_d1_database_id=cloudflare_d1_database_id,
+        r2_public_url=_strip_opt(os.getenv("R2_PUBLIC_URL")),
     )

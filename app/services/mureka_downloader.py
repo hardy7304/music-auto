@@ -244,6 +244,10 @@ class MurekaDownloader:
         
         # Dual Backup Manager
         self._storage_manager = StorageManager(settings)
+        
+        # D1 Database Manager
+        from app.services.d1_manager import D1Manager
+        self._d1_manager = D1Manager(settings)
 
     # ── connection lifecycle ──────────────────────────────────────────
 
@@ -386,9 +390,12 @@ class MurekaDownloader:
         if self._browser is None:
             raise RuntimeError("Not connected. Call connect() first.")
 
-        async def _emit(t: str, s: str) -> None:
+        async def _emit_event(msg_dict: dict) -> None:
             if progress_callback:
-                await progress_callback({"t": t, "s": s})
+                await progress_callback(msg_dict)
+
+        async def _emit(t: str, s: str) -> None:
+            await _emit_event({"t": t, "s": s})
 
         page = await self._find_mureka_page()
         if page is None:
@@ -442,6 +449,9 @@ class MurekaDownloader:
 
                     title_el = await item.query_selector(".audio-item-title")
                     title = (await title_el.inner_text()).strip() if title_el else "Unknown"
+
+                    img_el = await item.query_selector("img")
+                    img_url = await img_el.get_attribute("src") if img_el else None
                     found_any = True
 
                     await _emit("out", f"⬇️ {title}\n")
@@ -453,6 +463,45 @@ class MurekaDownloader:
                     if result.success:
                         self._downloaded_ids.add(song_id)
                         await _emit("out", f"   ✅ 成功 — {', '.join(result.assets_downloaded)}\n")
+                        
+                        cover_url = img_url
+                        if img_url and result.folder:
+                            try:
+                                import urllib.request
+                                cover_path = Path(result.folder) / "cover.jpg"
+                                def _download_cover():
+                                    req = urllib.request.Request(img_url, headers={'User-Agent': 'Mozilla/5.0'})
+                                    with urllib.request.urlopen(req) as response, open(cover_path, 'wb') as out_file:
+                                        out_file.write(response.read())
+                                await asyncio.to_thread(_download_cover)
+                                await _emit("out", f"   🖼️ 已儲存專輯封面 (cover.jpg)\n")
+                            except Exception as e:
+                                logger.warning("Failed to download cover for %s: %s", title, e)
+
+                        if img_url:
+                            await _emit_event({"t": "song_cover", "title": title, "url": img_url})
+                            
+                        # Backup to NAS & R2
+                        if result.folder:
+                            folder_path = Path(result.folder)
+                            backup_messages = await self._storage_manager.sync_all(folder_path)
+                            for msg in backup_messages:
+                                await _emit("out", f"   {msg}\n")
+                            
+                            # Write to D1 Database
+                            category_path = self._storage_manager._get_category_path(folder_path.name)
+                            author = folder_path.name.split("_")[1] if "_" in folder_path.name else "Unknown"
+                            d1_success = await self._d1_manager.upsert_song(
+                                song_id=song_id,
+                                title=title,
+                                author=author,
+                                folder_name=folder_path.name,
+                                r2_category_path=category_path,
+                                cover_url=cover_url
+                            )
+                            if d1_success:
+                                await _emit("out", f"   💾 已寫入 Cloudflare D1 資料庫\n")
+                                
                         for msg in result.backup_messages:
                             await _emit("out", f"   {msg}\n")
                     else:
