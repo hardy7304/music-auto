@@ -351,7 +351,7 @@ async def api_meta() -> dict:
 
 
 @app.get("/api/songs")
-async def api_songs(limit: int = 50, offset: int = 0, genre: str | None = None) -> list[dict]:
+async def api_songs(limit: int = 1000, offset: int = 0, genre: str | None = None) -> list[dict]:
     """從 D1 資料庫抓取最新下載的歌曲，並解析 R2 公開 URL 或本地串流路徑"""
     from app.config import load_settings
     from app.services.d1_manager import D1Manager

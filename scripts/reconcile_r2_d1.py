@@ -10,6 +10,8 @@ Usage:
 import asyncio
 import sys
 import argparse
+import json
+import re
 from pathlib import Path
 
 # Add project root to sys.path
@@ -75,14 +77,18 @@ async def reconcile(heal: bool = False):
         print(f"[-] Failed to list R2 objects: {e}")
         return
 
-    # 3. Get Local Folders
+    # 3. Get Local Folders (Only directories containing at least one .mp3 file)
     download_dir = Path(settings.download_dir)
     print(f"[+] Scanning local downloads directory ({download_dir})...")
     local_folders = []
     if download_dir.exists():
         for item in download_dir.iterdir():
-            if item.is_dir() and "_" in item.name:
-                local_folders.append(item)
+            if item.is_dir() and not item.name.startswith("."):
+                try:
+                    if any(f.suffix == '.mp3' for f in item.iterdir()):
+                        local_folders.append(item)
+                except Exception:
+                    pass
     print(f"    Found {len(local_folders)} folders locally.")
 
     # 4. Compare and reconcile
@@ -136,20 +142,48 @@ async def reconcile(heal: bool = False):
             print(f"[+] Re-importing {len(missing_in_d1)} folders into D1...")
             for folder in missing_in_d1:
                 folder_name = folder.name
-                parts = folder_name.split("_")
-                song_id = parts[-1] if len(parts) >= 4 else folder_name
-                author = parts[1] if len(parts) >= 2 else "Unknown"
-                title = parts[2] if len(parts) >= 3 else folder_name
                 
-                # Check for cover image in local folder
-                cover_url = ""
+                # Check for metadata.json first to get exact values
                 metadata_file = folder / "metadata.json"
+                meta_data = {}
                 if metadata_file.exists():
                     try:
-                        meta = json.loads(metadata_file.read_text(encoding="utf-8"))
-                        cover_url = meta.get("cover_url", "")
+                        meta_data = json.loads(metadata_file.read_text(encoding="utf-8"))
                     except Exception:
                         pass
+
+                song_id = meta_data.get("song_id")
+                title = meta_data.get("title")
+                author = meta_data.get("author")
+                cover_url = meta_data.get("cover_url", "")
+
+                # Robust fallback parser if metadata.json is missing or incomplete
+                if not song_id or not title or not author:
+                    parts = folder_name.split("_")
+                    fallback_song_id = parts[-1] if len(parts) >= 2 else folder_name
+                    rest = "_".join(parts[:-1]) if len(parts) >= 2 else folder_name
+                    
+                    # Remove date prefix if it matches YYYYMMDD
+                    m = re.match(r"^(\d{8})\s*(.*)$", rest)
+                    if m:
+                        author_and_title = m.group(2)
+                    else:
+                        author_and_title = rest
+                    
+                    subparts = author_and_title.split()
+                    if len(subparts) >= 2:
+                        fallback_author = subparts[0]
+                        fallback_title = " ".join(subparts[1:])
+                    elif len(subparts) == 1:
+                        fallback_author = "Unknown"
+                        fallback_title = subparts[0]
+                    else:
+                        fallback_author = "Unknown"
+                        fallback_title = folder_name
+                        
+                    song_id = song_id or fallback_song_id
+                    title = title or fallback_title
+                    author = author or fallback_author
                 
                 category_path = sm._get_category_path(folder_name)
                 print(f"   -> Importing {title} ({song_id})")

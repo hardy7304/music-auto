@@ -49,7 +49,7 @@ export function PlayerProvider({ children }: {children: React.ReactNode;}) {
   useEffect(() => {
     async function fetchSongs() {
       try {
-        const res = await fetch('/api/songs?limit=500');
+        const res = await fetch('/api/songs?limit=1000');
         if (res.ok) {
           const data = await res.json();
           const mapped: Track[] = data.map((s: any) => ({
