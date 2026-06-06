@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Search, Library } from 'lucide-react';
+import { Home, Search, Library, Cpu } from 'lucide-react';
 interface MobileNavProps {
   activeView: string;
   onNavigate: (view: string) => void;
@@ -19,6 +19,11 @@ const items = [
   id: 'library',
   label: 'Library',
   icon: Library
+},
+{
+  id: 'automation',
+  label: 'Auto',
+  icon: Cpu
 }];
 
 export function MobileNav({ activeView, onNavigate }: MobileNavProps) {

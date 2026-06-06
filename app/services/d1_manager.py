@@ -74,12 +74,12 @@ class D1Manager:
             ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
         )
         ON CONFLICT(song_id) DO UPDATE SET
-            title=excluded.title,
-            author=excluded.author,
-            folder_name=excluded.folder_name,
-            r2_category_path=excluded.r2_category_path,
-            cover_url=COALESCE(excluded.cover_url, mureka_songs.cover_url),
-            lyrics=COALESCE(excluded.lyrics, mureka_songs.lyrics),
+            title=COALESCE(NULLIF(excluded.title, ''), mureka_songs.title),
+            author=COALESCE(NULLIF(excluded.author, ''), mureka_songs.author),
+            folder_name=COALESCE(NULLIF(excluded.folder_name, ''), mureka_songs.folder_name),
+            r2_category_path=COALESCE(NULLIF(excluded.r2_category_path, ''), mureka_songs.r2_category_path),
+            cover_url=COALESCE(NULLIF(excluded.cover_url, ''), mureka_songs.cover_url),
+            lyrics=COALESCE(NULLIF(excluded.lyrics, ''), mureka_songs.lyrics),
             status=excluded.status,
             genre=COALESCE(mureka_songs.genre, 'Uncategorized'),
             downloaded_at=CURRENT_TIMESTAMP
@@ -88,10 +88,10 @@ class D1Manager:
             song_id,
             title,
             author or "",
-            folder_name or "",
-            r2_category_path or "",
-            cover_url or "",
-            lyrics or "",
+            folder_name or None,
+            r2_category_path or None,
+            cover_url or None,
+            lyrics or None,
             status,
             genre
         ]
